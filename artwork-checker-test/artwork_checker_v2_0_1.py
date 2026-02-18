@@ -45,6 +45,7 @@ import logging
 import re
 import argparse
 import sys
+import traceback
 import json
 import os
 from pathlib import Path
@@ -205,7 +206,13 @@ class Config:
     ZOOM_ON_NEGATION = True          # Zoom if field contains negation words
     ZOOM_CONFIDENCE_THRESHOLD = 100  # Zoom if confidence < 100%
     ZOOM_FUZZY_THRESHOLD = 100       # Zoom if fuzzy score < 100%
-    
+    VISION_ALWAYS_REQUIRED = True    # Always trigger vision double-check regardless of confidence
+
+    # -------------------------------------------------------------------------
+    # ROTATION RECONSTRUCTION
+    # -------------------------------------------------------------------------
+    ROTATION_PROXIMITY_THRESHOLD = 8.0  # Max pt between x/y centers to group vertical spans
+
     # Unit patterns for zoom trigger
     UNIT_PATTERNS = [
         r'\b\d+\s*(mg|g|kg|ml|mL|ML|l|L|oz|OZ|fl\.?\s*oz|FL\.?\s*OZ|pt|qt|gal)\b',
@@ -583,6 +590,7 @@ class MatchFinding:
     zoom_reasons: List[str] = field(default_factory=list)
     issue_id: Optional[str] = None
     bbox: Optional[Tuple[float, float, float, float]] = None
+    matched_runs: List['TextRun'] = field(default_factory=list)
 
 
 @dataclass
@@ -1371,22 +1379,20 @@ class CopyQualityChecker:
                 continue
             
             # Check if word has unexpected capitalization
-            # First letter uppercase when it shouldn't be (not sentence start)
+            # Fields must be lowercase; capitalization is only valid after .!?
             if word[0].isupper() and not word.isupper():
-                # Check if it's at the start of text or after period
                 word_pos = text.find(word)
-                if word_pos > 0:
-                    # Check what's before this word
-                    before = text[:word_pos].rstrip()
-                    if before and before[-1] not in '.!?':
-                        issues.append(CopyQualityIssue(
-                            language=language,
-                            field_name=field_name,
-                            original_text=word,
-                            issue_type="Capitalization",
-                            recommendation=f"'{word}' should be lowercase '{word.lower()}'",
-                            status_code=StatusCode.FAIL
-                        ))
+                before = text[:word_pos].rstrip()
+                # Flag unless the word directly follows sentence-ending punctuation
+                if not (before and before[-1] in '.!?'):
+                    issues.append(CopyQualityIssue(
+                        language=language,
+                        field_name=field_name,
+                        original_text=word,
+                        issue_type="Capitalization",
+                        recommendation=f"'{word}' should be lowercase '{word.lower()}'",
+                        status_code=StatusCode.FAIL
+                    ))
         
         return issues
     
@@ -2130,13 +2136,13 @@ class PDFExtractor:
                 extraction_method=method,
                 confidence=confidence,
                 text_runs=filtered_runs,
-                pages_processed=len(doc),
+                pages_processed=page_count,
                 pages_with_text=pages_with_text,
                 warnings=self.warnings,
                 metadata={
                     'total_runs_before_filter': len(all_text_runs),
                     'total_runs_after_filter': len(filtered_runs),
-                    'page_count': len(doc)
+                    'page_count': page_count
                 }
             )
             
@@ -2210,10 +2216,16 @@ class PDFExtractor:
                         confidence=0.7
                     )
                     text_runs.append(text_run)
-                    
+
+            # Augment with reconstructed rotated-text groups for matching
+            reconstructed = self._reconstruct_rotated_runs(text_runs, page_num)
+            if reconstructed:
+                logger.debug(f"Page {page_num}: added {len(reconstructed)} reconstructed rotated run(s)")
+                text_runs.extend(reconstructed)
+
         except Exception as e:
             logger.warning(f"Page {page_num} extraction error: {e}")
-        
+
         return text_runs
     
     def _detect_rotation(self, line: Dict) -> int:
@@ -2244,6 +2256,109 @@ class PDFExtractor:
             return 270  # Vertical, top to bottom
         
         return 0
+
+    def _group_rotated_by_column(
+        self,
+        runs: List[TextRun],
+        rotation: int
+    ) -> List[List[TextRun]]:
+        """
+        Group rotated text runs by their spatial column or row.
+
+        For 90°/270° text, groups by x-center (same vertical column).
+        For 180° text, groups by y-center (same horizontal row).
+        Runs within ROTATION_PROXIMITY_THRESHOLD points are considered
+        part of the same column/row.
+        """
+        threshold = config.ROTATION_PROXIMITY_THRESHOLD
+
+        def axis_center(run: TextRun) -> float:
+            if rotation in (90, 270):
+                return (run.bbox[0] + run.bbox[2]) / 2  # x-center
+            return (run.bbox[1] + run.bbox[3]) / 2      # y-center
+
+        sorted_runs = sorted(runs, key=axis_center)
+        groups: List[List[TextRun]] = []
+        current: List[TextRun] = [sorted_runs[0]]
+        current_key = axis_center(sorted_runs[0])
+
+        for run in sorted_runs[1:]:
+            key = axis_center(run)
+            if abs(key - current_key) <= threshold:
+                current.append(run)
+            else:
+                groups.append(current)
+                current = [run]
+                current_key = key
+
+        groups.append(current)
+        return groups
+
+    def _reconstruct_rotated_runs(
+        self,
+        text_runs: List[TextRun],
+        page_num: int
+    ) -> List[TextRun]:
+        """
+        Reconstruct rotated text spans into matchable strings.
+
+        Vertical/rotated text is often extracted as many small spans
+        that the matcher cannot piece together.  This method:
+          1. Collects all non-zero-rotation runs that have a bbox.
+          2. Groups them by rotation angle and spatial column/row.
+          3. Sorts each group in reading order.
+          4. Concatenates into a single TextRun per group.
+
+        The resulting runs are ADDED to (not replacing) the original
+        list so both individual spans and reconstructed strings are
+        available to the matcher.
+        """
+        reconstructed: List[TextRun] = []
+
+        for rotation in (90, 180, 270):
+            rotated = [r for r in text_runs if r.rotation == rotation and r.bbox]
+            if len(rotated) < 2:
+                continue
+
+            groups = self._group_rotated_by_column(rotated, rotation)
+
+            for group in groups:
+                if len(group) < 2:
+                    continue
+
+                # Sort in reading order for each rotation
+                if rotation == 90:
+                    # Bottom-to-top: descending y-center
+                    group.sort(key=lambda r: -(r.bbox[1] + r.bbox[3]) / 2)
+                elif rotation == 270:
+                    # Top-to-bottom: ascending y-center
+                    group.sort(key=lambda r: (r.bbox[1] + r.bbox[3]) / 2)
+                elif rotation == 180:
+                    # Right-to-left: descending x-center
+                    group.sort(key=lambda r: -(r.bbox[0] + r.bbox[2]) / 2)
+
+                combined = ' '.join(r.text for r in group if r.text.strip())
+                if not combined.strip():
+                    continue
+
+                # Union bounding box
+                x0 = min(r.bbox[0] for r in group)
+                y0 = min(r.bbox[1] for r in group)
+                x1 = max(r.bbox[2] for r in group)
+                y1 = max(r.bbox[3] for r in group)
+
+                reconstructed.append(TextRun(
+                    text=combined,
+                    page_number=page_num,
+                    bbox=(x0, y0, x1, y1),
+                    font_name=group[0].font_name,
+                    font_size=group[0].font_size,
+                    extraction_method=ExtractionMethod.LIVE_TEXT,
+                    confidence=1.0,
+                    rotation=rotation
+                ))
+
+        return reconstructed
 
 
 # =============================================================================
@@ -2744,9 +2859,13 @@ class ArtworkMatcher:
         normalized_copy = self.normalizer.normalize(field.text)
         
         # Check zoom triggers
-        zoom_triggers = self.zoom_detector.check_triggers(field.text)
-        requires_visual = bool(zoom_triggers)
-        
+        requires_visual, zoom_triggers = self.zoom_detector.check_triggers(field.text)
+
+        # Always require vision double-check regardless of extraction confidence
+        if self.config.VISION_ALWAYS_REQUIRED and not requires_visual:
+            requires_visual = True
+            zoom_triggers = ["AI vision double-check always required"] + zoom_triggers
+
         # Try exact match first
         if normalized_copy in artwork_lookup:
             return MatchFinding(
@@ -2760,15 +2879,16 @@ class ArtworkMatcher:
                 similarity_score=100.0,
                 requires_zoom=requires_visual,
                 zoom_reasons=zoom_triggers,
-                notes=self._generate_match_notes(True, requires_visual, zoom_triggers)
+                notes=self._generate_match_notes(True, requires_visual, zoom_triggers),
+                matched_runs=artwork_lookup[normalized_copy]
             )
         
         # Try fuzzy matching with sliding window for multi-span matches
         best_match = self._fuzzy_match_with_sliding_window(normalized_copy, text_runs)
         
         if best_match:
-            match_type, fuzzy_score, matched_text, _ = best_match
-            
+            match_type, fuzzy_score, matched_text, matched_runs = best_match
+
             if fuzzy_score >= self.config.EXACT_MATCH_THRESHOLD:
                 # Fuzzy matcher found 100% match
                 return MatchFinding(
@@ -2782,7 +2902,8 @@ class ArtworkMatcher:
                     similarity_score=fuzzy_score,
                     requires_zoom=requires_visual,
                     zoom_reasons=zoom_triggers,
-                    notes=self._generate_match_notes(True, requires_visual, zoom_triggers)
+                    notes=self._generate_match_notes(True, requires_visual, zoom_triggers),
+                    matched_runs=matched_runs
                 )
             elif fuzzy_score >= self.config.NEAR_MATCH_THRESHOLD:
                 # Near match
@@ -2798,7 +2919,8 @@ class ArtworkMatcher:
                     requires_zoom=requires_visual,
                     zoom_reasons=zoom_triggers,
                     notes=[f"Near match ({fuzzy_score:.1f}%) - verify differences" +
-                           (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")]
+                           (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")],
+                    matched_runs=matched_runs
                 )
             else:
                 # Mismatch
@@ -2814,20 +2936,24 @@ class ArtworkMatcher:
                     requires_zoom=requires_visual,
                     zoom_reasons=zoom_triggers,
                     notes=[f"Mismatch detected ({fuzzy_score:.1f}%)" +
-                           (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")]
+                           (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")],
+                    matched_runs=matched_runs
                 )
         
         # NO MATCH FOUND - This is NOT a hallucination; it's evidence of absence
         return MatchFinding(
-            copy_field=field,
+            field_name=field.field_name,
+            panel=field.panel,
+            language=field.language,
+            copy_value=field.text,
             match_type=MatchType.MISSING_IN_ARTWORK,
-            status=StatusCode.FAIL,
+            status_code=StatusCode.FAIL,
             artwork_value=None,
-            matched_runs=[],
-            fuzzy_score=0.0,
-            zoom_triggers=zoom_triggers,
-            notes="🚨 NOT FOUND in artwork - requires visual confirmation" +
-                  (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")
+            similarity_score=0.0,
+            requires_zoom=requires_visual,
+            zoom_reasons=zoom_triggers,
+            notes=["🚨 NOT FOUND in artwork - requires visual confirmation" +
+                  (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")]
         )
     
     def _build_text_lookup(self, text_runs: List[TextRun]) -> Dict[str, List[TextRun]]:
@@ -3012,14 +3138,12 @@ class ConversionChecker:
             passed = difference <= self.TOLERANCE
             
             result = ConversionCheck(
-                field_name="Fill Weight",
-                ml_value=ml_value,
-                fl_oz_value=fl_oz_value,
-                calculated_fl_oz=calculated_fl_oz,
-                difference=difference,
-                tolerance=self.TOLERANCE,
-                passed=passed,
-                status=StatusCode.OK if passed else StatusCode.FAIL,
+                source_field="Fill Weight",
+                declared_ml=ml_value,
+                declared_floz=fl_oz_value,
+                calculated_floz=calculated_fl_oz,
+                within_tolerance=passed,
+                status_code=StatusCode.OK if passed else StatusCode.FAIL,
                 notes=f"Declared: {fl_oz_value} fl oz | Calculated: {calculated_fl_oz:.2f} fl oz | Diff: {difference:.2f}"
             )
             
@@ -3194,7 +3318,7 @@ class SnapshotGenerator:
             # Use the page number from the first matched run
             for run in finding.matched_runs:
                 if run.bbox:
-                    page_num = run.page_num
+                    page_num = run.page_number - 1  # TextRun.page_number is 1-based; convert to 0-based
                     if page_num not in by_page:
                         by_page[page_num] = []
                     by_page[page_num].append(finding)
@@ -3248,7 +3372,7 @@ class SnapshotGenerator:
                 continue
             
             # Get color based on status
-            color = colors.get(finding.status, (128, 128, 128))
+            color = colors.get(finding.status_code, (128, 128, 128))
             
             # Draw each matched run's bounding box
             for run in finding.matched_runs:
@@ -3401,8 +3525,6 @@ class MarkdownRenderer:
 |-------|-------|
 | Project Name | {sanitize_for_markdown(project_name)} |
 | Round / Version | {datetime.now().strftime('%m.%d.%y')} |
-| Copy Document | {Path(copy_doc.file_path).name} |
-| Languages | {', '.join(copy_doc.metadata.get('languages_found', ['EN']))} |
 """
     
     @staticmethod
@@ -3900,7 +4022,8 @@ class ArtworkChecker:
         
         snapshot_paths = []
         if config.SNAPSHOT_ENABLED and artwork_ext == '.pdf':
-            snapshot_paths = SnapshotGenerator.generate_snapshots_for_findings(
+            snapshot_gen = SnapshotGenerator(config)
+            snapshot_paths = snapshot_gen.generate_snapshots(
                 artwork_path,
                 match_findings,
                 output_dir / "snapshots"
@@ -4057,15 +4180,30 @@ def main():
         sys.exit(0)
         
     except FileNotFoundError as e:
-        logger.error(f"File not found: {e}")
+        print("\n=== SCRIPT ERROR ===", file=sys.stderr)
+        print(f"ERROR TYPE: FileNotFoundError", file=sys.stderr)
+        print(f"MESSAGE: {e}", file=sys.stderr)
+        print("TRACEBACK:", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        print("===================", file=sys.stderr)
         sys.exit(1)
-        
+
     except ValueError as e:
-        logger.error(f"Invalid input: {e}")
+        print("\n=== SCRIPT ERROR ===", file=sys.stderr)
+        print(f"ERROR TYPE: ValueError", file=sys.stderr)
+        print(f"MESSAGE: {e}", file=sys.stderr)
+        print("TRACEBACK:", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        print("===================", file=sys.stderr)
         sys.exit(1)
-        
+
     except Exception as e:
-        logger.error(f"Unexpected error: {e}", exc_info=True)
+        print("\n=== SCRIPT ERROR ===", file=sys.stderr)
+        print(f"ERROR TYPE: {type(e).__name__}", file=sys.stderr)
+        print(f"MESSAGE: {e}", file=sys.stderr)
+        print("TRACEBACK:", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        print("===================", file=sys.stderr)
         sys.exit(2)
 
 
