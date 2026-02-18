@@ -2689,14 +2689,17 @@ class ArtworkMatcher:
             logger.warning("Extraction failed - cannot generate reliable matches")
             for field in copy_fields:
                 findings.append(MatchFinding(
-                    copy_field=field,
+                    field_name=field.field_name,
+                    panel=field.panel,
+                    language=field.language,
+                    copy_value=field.text,
                     match_type=MatchType.REQUIRES_VERIFICATION,
-                    status=StatusCode.TBD,
+                    status_code=StatusCode.TBD,
                     artwork_value=None,
-                    matched_runs=[],
-                    fuzzy_score=0.0,
-                    zoom_triggers=[],
-                    notes="Extraction failed - manual verification required"
+                    similarity_score=0.0,
+                    requires_zoom=False,
+                    zoom_reasons=[],
+                    notes=["Extraction failed - manual verification required"]
                 ))
             return findings
         
@@ -2746,15 +2749,17 @@ class ArtworkMatcher:
         
         # Try exact match first
         if normalized_copy in artwork_lookup:
-            matched_runs = artwork_lookup[normalized_copy]
             return MatchFinding(
-                copy_field=field,
+                field_name=field.field_name,
+                panel=field.panel,
+                language=field.language,
+                copy_value=field.text,
                 match_type=MatchType.EXACT_MATCH,
-                status=StatusCode.TBD if requires_visual else StatusCode.OK,
-                artwork_value=field.text,  # Use copy value for exact match
-                matched_runs=matched_runs,
-                fuzzy_score=100.0,
-                zoom_triggers=zoom_triggers,
+                status_code=StatusCode.TBD if requires_visual else StatusCode.OK,
+                artwork_value=field.text,
+                similarity_score=100.0,
+                requires_zoom=requires_visual,
+                zoom_reasons=zoom_triggers,
                 notes=self._generate_match_notes(True, requires_visual, zoom_triggers)
             )
         
@@ -2762,45 +2767,54 @@ class ArtworkMatcher:
         best_match = self._fuzzy_match_with_sliding_window(normalized_copy, text_runs)
         
         if best_match:
-            match_type, fuzzy_score, matched_text, matched_runs = best_match
+            match_type, fuzzy_score, matched_text, _ = best_match
             
             if fuzzy_score >= self.config.EXACT_MATCH_THRESHOLD:
                 # Fuzzy matcher found 100% match
                 return MatchFinding(
-                    copy_field=field,
+                    field_name=field.field_name,
+                    panel=field.panel,
+                    language=field.language,
+                    copy_value=field.text,
                     match_type=MatchType.EXACT_MATCH,
-                    status=StatusCode.TBD if requires_visual else StatusCode.OK,
+                    status_code=StatusCode.TBD if requires_visual else StatusCode.OK,
                     artwork_value=matched_text,
-                    matched_runs=matched_runs,
-                    fuzzy_score=fuzzy_score,
-                    zoom_triggers=zoom_triggers,
+                    similarity_score=fuzzy_score,
+                    requires_zoom=requires_visual,
+                    zoom_reasons=zoom_triggers,
                     notes=self._generate_match_notes(True, requires_visual, zoom_triggers)
                 )
             elif fuzzy_score >= self.config.NEAR_MATCH_THRESHOLD:
                 # Near match
                 return MatchFinding(
-                    copy_field=field,
+                    field_name=field.field_name,
+                    panel=field.panel,
+                    language=field.language,
+                    copy_value=field.text,
                     match_type=MatchType.NEAR_MATCH,
-                    status=StatusCode.TBD if requires_visual else StatusCode.ATTN,
+                    status_code=StatusCode.TBD if requires_visual else StatusCode.ATTN,
                     artwork_value=matched_text,
-                    matched_runs=matched_runs,
-                    fuzzy_score=fuzzy_score,
-                    zoom_triggers=zoom_triggers,
-                    notes=f"Near match ({fuzzy_score:.1f}%) - verify differences" +
-                          (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")
+                    similarity_score=fuzzy_score,
+                    requires_zoom=requires_visual,
+                    zoom_reasons=zoom_triggers,
+                    notes=[f"Near match ({fuzzy_score:.1f}%) - verify differences" +
+                           (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")]
                 )
             else:
                 # Mismatch
                 return MatchFinding(
-                    copy_field=field,
+                    field_name=field.field_name,
+                    panel=field.panel,
+                    language=field.language,
+                    copy_value=field.text,
                     match_type=MatchType.MISMATCH,
-                    status=StatusCode.FAIL,
+                    status_code=StatusCode.FAIL,
                     artwork_value=matched_text,
-                    matched_runs=matched_runs,
-                    fuzzy_score=fuzzy_score,
-                    zoom_triggers=zoom_triggers,
-                    notes=f"Mismatch detected ({fuzzy_score:.1f}%)" +
-                          (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")
+                    similarity_score=fuzzy_score,
+                    requires_zoom=requires_visual,
+                    zoom_reasons=zoom_triggers,
+                    notes=[f"Mismatch detected ({fuzzy_score:.1f}%)" +
+                           (f" | Zoom: {', '.join(zoom_triggers)}" if zoom_triggers else "")]
                 )
         
         # NO MATCH FOUND - This is NOT a hallucination; it's evidence of absence
@@ -3838,16 +3852,17 @@ class ArtworkChecker:
         logger.info("\n[5/7] Matching artwork against copy document...")
         
         # Unit conversions (Section 3C)
-        conversions = ConversionChecker(self.config).check_conversions(
+        conversions = ConversionChecker(Config).check_conversions(
             copy_doc.fields,
             artwork_extraction.text_runs
         )
         logger.info(f"  - Conversions checked: {len(conversions)}")
         
         # Artwork matching (Section 3D)
-        match_findings = self.matcher.match_all_fields(
+        match_findings = self.matcher.match_fields(
             copy_doc.fields,
-            artwork_extraction
+            artwork_extraction.text_runs,
+            artwork_extraction.extraction_method
         )
         
         exact = sum(1 for f in match_findings if f.match_type == MatchType.EXACT_MATCH)
