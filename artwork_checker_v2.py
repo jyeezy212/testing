@@ -2655,8 +2655,8 @@ class ArtworkMatcher:
             config: Configuration instance
         """
         self.config = config
-        self.normalizer = TextNormalizer(config)
-        self.zoom_detector = ZoomTriggerDetector(config)
+        self.normalizer = TextNormalizer
+        self.zoom_detector = ZoomTriggerDetector
         logger.info("ArtworkMatcher initialized")
     
     def match_fields(
@@ -3838,7 +3838,10 @@ class ArtworkChecker:
         logger.info("\n[5/7] Matching artwork against copy document...")
         
         # Unit conversions (Section 3C)
-        conversions = ConversionChecker.check_conversions(copy_doc)
+        conversions = ConversionChecker(self.config).check_conversions(
+            copy_doc.fields,
+            artwork_extraction.text_runs
+        )
         logger.info(f"  - Conversions checked: {len(conversions)}")
         
         # Artwork matching (Section 3D)
