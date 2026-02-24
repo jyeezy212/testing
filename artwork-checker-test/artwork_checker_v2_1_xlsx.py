@@ -56,6 +56,7 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from io import BytesIO
 import textwrap
+import hashlib
 
 # Third-party imports - with availability checks
 try:
@@ -528,6 +529,7 @@ class MatchFinding:
     requires_zoom: bool = False
     zoom_reasons: List[str] = field(default_factory=list)
     issue_id: Optional[str] = None
+    finding_id: str = ""   # stable deterministic ID for vision override mapping
     bbox: Optional[Tuple[float, float, float, float]] = None
     matched_runs: List['TextRun'] = field(default_factory=list)
     has_3a_flag: bool = False  # Cross-reference: copy doc had quality issue
@@ -636,6 +638,12 @@ def fuzzy_ratio(str1: str, str2: str) -> float:
     if not str1 or not str2:
         return 0.0
     return SequenceMatcher(None, str1, str2).ratio() * 100
+
+
+def make_finding_id(field_name: str, panel: str, language: str, row_number: int, col_index: int) -> str:
+    """Deterministic 10-char ID for a finding, used to map vision overrides back to findings."""
+    raw = f"{row_number}|{col_index}|{panel}|{language}|{field_name}"
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:10]
 
 
 def sanitize_for_markdown(text: str) -> str:
@@ -1852,6 +1860,12 @@ class ArtworkMatcher:
                 f, text_runs, artwork_lookup, quality_lookup
             )
 
+            # Stable deterministic ID for every finding (vision override mapping)
+            finding.finding_id = make_finding_id(
+                finding.field_name, finding.panel, finding.language,
+                f.row_number, f.col_index
+            )
+
             # Assign issue ID if not OK
             if finding.status_code != StatusCode.OK:
                 finding.issue_id = f"D-{issue_counter:03d}"
@@ -1900,6 +1914,10 @@ class ArtworkMatcher:
                 requires_zoom=True,
                 zoom_reasons=["Contains numbers"],
             )
+            formula_finding.finding_id = make_finding_id(
+                formula_finding.field_name, formula_finding.panel,
+                formula_finding.language, field.row_number, field.col_index
+            )
             if not formula_found:
                 formula_finding.issue_id = f"D-{issue_counter:03d}"
             findings.append(formula_finding)
@@ -1910,6 +1928,10 @@ class ArtworkMatcher:
                 "Ingredient List", field.panel, field.language,
                 ingredient_text, text_runs, artwork_lookup, has_3a
             )
+            ingredient_finding.finding_id = make_finding_id(
+                ingredient_finding.field_name, ingredient_finding.panel,
+                ingredient_finding.language, field.row_number, field.col_index + 100
+            )
             if ingredient_finding.status_code != StatusCode.OK:
                 ingredient_finding.issue_id = f"D-{issue_counter + 1:03d}"
             findings.append(ingredient_finding)
@@ -1919,6 +1941,10 @@ class ArtworkMatcher:
             finding = self._match_text_against_runs(
                 "Ingredient List", field.panel, field.language,
                 text, text_runs, artwork_lookup, has_3a
+            )
+            finding.finding_id = make_finding_id(
+                finding.field_name, finding.panel, finding.language,
+                field.row_number, field.col_index
             )
             findings.append(finding)
 
@@ -2013,8 +2039,8 @@ class ArtworkMatcher:
                     similarity_score=fuzzy_score,
                     status_code=StatusCode.ATTN,
                     requires_zoom=True,
-                    zoom_reasons=["Curved text — visual verification required"],
-                    notes=["Curved text — visual verification required" + cross_ref_note],
+                    zoom_reasons=["Curved text detected"],
+                    notes=["Curved text detected" + cross_ref_note],
                     matched_runs=matched_runs,
                     has_3a_flag=has_3a_flag,
                 )
@@ -2061,7 +2087,7 @@ class ArtworkMatcher:
                 )
 
         # NOT FOUND
-        notes = ["NOT FOUND in artwork — requires visual confirmation"]
+        notes = []
         if has_3a_flag:
             notes.append("Note: copy doc also flagged in A")
         return MatchFinding(
@@ -2331,7 +2357,7 @@ class GPTVisionAssetExporter:
             # 3) Export per-item crops
             items = []
             for idx, f in enumerate(tier1, 1):
-                issue_id = f.issue_id or f"TIER1-{idx:03d}"
+                issue_id = f.finding_id or f.issue_id or f"TIER1-{idx:03d}"
 
                 crops: List[str] = []
                 page_guess = f.matched_runs[0].page_number if f.matched_runs else 1
@@ -2369,6 +2395,7 @@ class GPTVisionAssetExporter:
 
                 items.append({
                     "id": issue_id,
+                    "finding_id": f.finding_id,
                     "panel": f.panel,
                     "language": f.language,
                     "field_name": f.field_name,
@@ -2624,34 +2651,11 @@ class MarkdownRenderer:
     ) -> str:
         sections = []
 
-        # DRAFT banner — shown whenever vision verification has not been performed.
-        # The GPT layer must perform a visual zoom pass on to_verify.csv before
-        # presenting this report as final.
-        if not vision_performed:
-            sections.append(
-                "---\n"
-                "> ⚠️ **DRAFT REPORT — VISUAL VERIFICATION PENDING**\n"
-                ">\n"
-                "> This report was produced by **automated text extraction only**.\n"
-                "> It is **NOT final**. A `<<<GPT_VISION_REQUIRED>>>` sentinel block was printed to stdout.\n"
-                "> Before presenting results to the user, the GPT must:\n"
-                "> 1. Read the sentinel JSON and open `gpt_vision/vision_tasks.json`.\n"
-                "> 2. For **every item**, open the listed crop (or `page_image`) and retype visible text character by character.\n"
-                "> 3. Any `NOT FOUND` result must be re-checked visually — visual value overrides the script value.\n"
-                "> 4. Each Section D row Notes column must begin with `Visually verified on page X, [panel], [language]`.\n"
-                "> 5. If visual verification cannot be performed, output a `⛔ VISUAL VERIFICATION NOT EXECUTED` block listing all unverified fields.\n"
-                ">\n"
-                "> **Do not remove this banner or present the report as final until all items in `vision_tasks.json` are verified.**\n"
-                "---\n"
-            )
-
         sections.append("# Artwork Verification Report\n")
         sections.append(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n")
         sections.append(f"*Checker Version: {config.VERSION}*\n")
         if vision_performed:
             sections.append("*Vision verification: ✅ Tier 1 fields visually confirmed*\n")
-        else:
-            sections.append("*Vision verification: 🔍 REQUIRED — run Custom GPT visual pass on `gpt_vision/vision_tasks.json`*\n")
 
         # 1. Project Header
         sections.append(MarkdownRenderer._section1(copy_doc))
@@ -3045,6 +3049,62 @@ class MarkdownRenderer:
 
 
 # =============================================================================
+# VISION OVERRIDE APPLICATOR
+# =============================================================================
+
+def apply_vision_overrides(findings: List[MatchFinding], overrides_path: Path) -> int:
+    """
+    Apply GPT visual verification results to match findings.
+
+    Reads vision_overrides.json (written by the Custom GPT after visual pass),
+    maps each override to the corresponding finding via finding_id, and updates
+    artwork_value, match_type, status_code, notes, and requires_zoom.
+
+    Returns: number of overrides applied.
+    """
+    data = json.loads(overrides_path.read_text(encoding="utf-8"))
+    ov_map = {o["finding_id"]: o for o in data.get("overrides", [])}
+    normalizer = TextNormalizer()
+
+    applied = 0
+    for f in findings:
+        o = ov_map.get(f.finding_id)
+        if not o:
+            continue
+
+        visual_val = (o.get("visual_artwork_value") or "").strip()
+        found = o.get("found", bool(visual_val and visual_val.upper() != "NOT FOUND"))
+
+        if not found or not visual_val or visual_val.upper() == "NOT FOUND":
+            f.artwork_value = None
+            f.match_type = MatchType.MISSING_IN_ARTWORK
+            f.status_code = StatusCode.FAIL
+        else:
+            f.artwork_value = visual_val
+            score = fuzzy_ratio(
+                normalizer.normalize(f.copy_value),
+                normalizer.normalize(visual_val)
+            )
+            f.similarity_score = score
+            if score >= config.EXACT_MATCH_THRESHOLD:
+                f.match_type = MatchType.EXACT_MATCH
+                f.status_code = StatusCode.ATTN if f.has_3a_flag else StatusCode.OK
+            elif score >= config.NEAR_MATCH_THRESHOLD:
+                f.match_type = MatchType.NEAR_MATCH
+                f.status_code = StatusCode.ATTN
+            else:
+                f.match_type = MatchType.MISMATCH
+                f.status_code = StatusCode.FAIL
+
+        note = (o.get("notes") or "").strip()
+        f.notes = [note] if note else []
+        f.requires_zoom = False
+        applied += 1
+
+    return applied
+
+
+# =============================================================================
 # MAIN ORCHESTRATOR
 # =============================================================================
 
@@ -3065,6 +3125,8 @@ class ArtworkChecker:
         output_dir: Optional[Path] = None,
         vision_enabled: bool = False,
         vision_model: str = "gpt-4o",
+        require_vision: bool = False,
+        vision_overrides: Optional[Path] = None,
     ) -> str:
         logger.info("=" * 60)
         logger.info(f"ARTWORK CHECKER v{config.VERSION}")
@@ -3145,11 +3207,46 @@ class ArtworkChecker:
             artwork_extraction.extraction_method, copy_quality_issues
         )
 
-        # STEP 5.5: Custom-GPT Vision Export (NO OpenAI SDK)
-        # Exports page renders + Tier 1 crops + sentinel block.
-        # The Custom GPT runtime performs the actual visual verification.
-        gpt_vision_payload = None
-        if config.GPT_VISION_EXPORT_ENABLED and artwork_path_used and artwork_path_used.suffix.lower() == ".pdf":
+        # STEP 5.5: Two-pass vision workflow
+        # Detect Tier 1 findings (NOT FOUND / mismatch / requires zoom).
+        tier1_exist = any(
+            f.requires_zoom
+            or f.artwork_value is None
+            or f.status_code in (StatusCode.ATTN, StatusCode.FAIL, StatusCode.TBD)
+            or f.match_type in (MatchType.MISSING_IN_ARTWORK, MatchType.MISMATCH, MatchType.REQUIRES_VERIFICATION)
+            for f in match_findings
+        )
+
+        vision_performed = False
+
+        # Pass 2: apply GPT visual overrides if provided
+        if vision_overrides is not None:
+            if not vision_overrides.exists():
+                raise FileNotFoundError(f"Vision overrides file not found: {vision_overrides}")
+            logger.info(f"\n[5.5/7] Applying vision overrides from {vision_overrides.name}...")
+            n = apply_vision_overrides(match_findings, vision_overrides)
+            logger.info(f"  - Applied {n} visual verification result(s)")
+            vision_performed = True
+        elif require_vision and tier1_exist:
+            # Export assets + print sentinel, then fail so GPT performs visual pass
+            if config.GPT_VISION_EXPORT_ENABLED and artwork_path_used and artwork_path_used.suffix.lower() == ".pdf":
+                logger.info("\n[5.5/7] Exporting GPT vision assets for Tier 1 findings...")
+                exporter = GPTVisionAssetExporter()
+                gpt_vision_payload = exporter.export(
+                    pdf_path=artwork_path_used,
+                    findings=match_findings,
+                    text_runs=artwork_extraction.text_runs,
+                    output_dir=output_dir
+                )
+                if gpt_vision_payload and gpt_vision_payload.get("items"):
+                    exporter.print_sentinel(gpt_vision_payload)
+            raise RuntimeError(
+                f"Tier 1 items exist ({sum(1 for f in match_findings if f.artwork_value is None or f.requires_zoom)} items) "
+                "but no --vision-overrides provided. "
+                "GPT must perform visual pass on gpt_vision/vision_tasks.json and supply vision_overrides.json."
+            )
+        elif config.GPT_VISION_EXPORT_ENABLED and artwork_path_used and artwork_path_used.suffix.lower() == ".pdf":
+            # Default: always export assets + sentinel (single-pass, GPT handles vision after)
             logger.info("\n[5.5/7] Exporting GPT vision assets for Tier 1 findings...")
             exporter = GPTVisionAssetExporter()
             gpt_vision_payload = exporter.export(
@@ -3160,9 +3257,6 @@ class ArtworkChecker:
             )
             if gpt_vision_payload and gpt_vision_payload.get("items"):
                 exporter.print_sentinel(gpt_vision_payload)
-
-        # Keep legacy flag for report banner compatibility
-        vision_performed = False
 
         # STEP 6: Font & Barcode (3E, 3F)
         logger.info("\n[6/7] Extracting font and barcode data...")
@@ -3282,11 +3376,19 @@ Examples:
     )
     parser.add_argument(
         '--vision', action='store_true',
-        help='Run vision model verification on Tier 1 findings (requires openai package + OPENAI_API_KEY)'
+        help='(Legacy) Run vision model verification using openai package + OPENAI_API_KEY'
     )
     parser.add_argument(
         '--vision-model', type=str, default='gpt-4o', metavar='MODEL',
-        help='Vision model to use for --vision (default: gpt-4o)'
+        help='Vision model for --vision flag (default: gpt-4o)'
+    )
+    parser.add_argument(
+        '--require-vision', action='store_true',
+        help='Fail if Tier 1 findings exist and no --vision-overrides are provided'
+    )
+    parser.add_argument(
+        '--vision-overrides', type=Path, default=None, metavar='JSON',
+        help='Path to vision_overrides.json produced by the Custom GPT visual pass'
     )
 
     return parser.parse_args()
@@ -3308,6 +3410,8 @@ def main():
             output_dir=args.output,
             vision_enabled=args.vision,
             vision_model=args.vision_model,
+            require_vision=args.require_vision,
+            vision_overrides=args.vision_overrides,
         )
         print("\n" + "=" * 60)
         print("MARKDOWN REPORT")

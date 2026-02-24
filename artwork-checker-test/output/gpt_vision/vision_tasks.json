@@ -7,7 +7,8 @@
   },
   "items": [
     {
-      "id": "D-001",
+      "id": "82308adf60",
+      "finding_id": "82308adf60",
       "panel": "Front Panel",
       "language": "English",
       "field_name": "Product Name",
@@ -19,11 +20,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-001_hint.png"
+        "output\\gpt_vision\\crops\\82308adf60_hint.png"
       ]
     },
     {
-      "id": "D-002",
+      "id": "14de4750e1",
+      "finding_id": "14de4750e1",
       "panel": "Front Panel",
       "language": "English",
       "field_name": "Secondary Name",
@@ -35,11 +37,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-002_hint.png"
+        "output\\gpt_vision\\crops\\14de4750e1_hint.png"
       ]
     },
     {
-      "id": "D-003",
+      "id": "49b8e19dee",
+      "finding_id": "49b8e19dee",
       "panel": "Front Panel",
       "language": "French",
       "field_name": "Secondary Name",
@@ -51,11 +54,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-003_hint.png"
+        "output\\gpt_vision\\crops\\49b8e19dee_hint.png"
       ]
     },
     {
-      "id": "D-004",
+      "id": "4c46c94010",
+      "finding_id": "4c46c94010",
       "panel": "Front Panel",
       "language": "English",
       "field_name": "Fill Weight",
@@ -71,14 +75,15 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-004_Q1.png",
-        "output\\gpt_vision\\crops\\D-004_Q2.png",
-        "output\\gpt_vision\\crops\\D-004_Q3.png",
-        "output\\gpt_vision\\crops\\D-004_Q4.png"
+        "output\\gpt_vision\\crops\\4c46c94010_Q1.png",
+        "output\\gpt_vision\\crops\\4c46c94010_Q2.png",
+        "output\\gpt_vision\\crops\\4c46c94010_Q3.png",
+        "output\\gpt_vision\\crops\\4c46c94010_Q4.png"
       ]
     },
     {
-      "id": "D-005",
+      "id": "1c4e12a5c3",
+      "finding_id": "1c4e12a5c3",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Marketing + Usage Copy 1",
@@ -90,11 +95,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-005_hint.png"
+        "output\\gpt_vision\\crops\\1c4e12a5c3_hint.png"
       ]
     },
     {
-      "id": "D-006",
+      "id": "76fd749e11",
+      "finding_id": "76fd749e11",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Pack Claim 3",
@@ -106,11 +112,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-006_hint.png"
+        "output\\gpt_vision\\crops\\76fd749e11_hint.png"
       ]
     },
     {
-      "id": "D-007",
+      "id": "f5c4ca4c5c",
+      "finding_id": "f5c4ca4c5c",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Pack Claim 3",
@@ -122,11 +129,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-007_hint.png"
+        "output\\gpt_vision\\crops\\f5c4ca4c5c_hint.png"
       ]
     },
     {
-      "id": "D-008",
+      "id": "4a5403d72f",
+      "finding_id": "4a5403d72f",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 2",
@@ -138,11 +146,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-008_hint.png"
+        "output\\gpt_vision\\crops\\4a5403d72f_hint.png"
       ]
     },
     {
-      "id": "D-009",
+      "id": "399da619b9",
+      "finding_id": "399da619b9",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 3",
@@ -154,11 +163,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-009_hint.png"
+        "output\\gpt_vision\\crops\\399da619b9_hint.png"
       ]
     },
     {
-      "id": "D-010",
+      "id": "b3d825ab62",
+      "finding_id": "b3d825ab62",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 4",
@@ -170,11 +180,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-010_hint.png"
+        "output\\gpt_vision\\crops\\b3d825ab62_hint.png"
       ]
     },
     {
-      "id": "D-011",
+      "id": "30696abef7",
+      "finding_id": "30696abef7",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 5",
@@ -186,11 +197,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-011_hint.png"
+        "output\\gpt_vision\\crops\\30696abef7_hint.png"
       ]
     },
     {
-      "id": "D-012",
+      "id": "e5cae1c318",
+      "finding_id": "e5cae1c318",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "PCR Callout (if needed)",
@@ -205,11 +217,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-012_hint.png"
+        "output\\gpt_vision\\crops\\e5cae1c318_hint.png"
       ]
     },
     {
-      "id": "D-013",
+      "id": "eb90c9d313",
+      "finding_id": "eb90c9d313",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "PCR Callout (if needed)",
@@ -224,11 +237,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-013_hint.png"
+        "output\\gpt_vision\\crops\\eb90c9d313_hint.png"
       ]
     },
     {
-      "id": "D-014",
+      "id": "076e4dfdf8",
+      "finding_id": "076e4dfdf8",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Address Block",
@@ -242,11 +256,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-014_hint.png"
+        "output\\gpt_vision\\crops\\076e4dfdf8_hint.png"
       ]
     },
     {
-      "id": "D-015",
+      "id": "ace9b05a89",
+      "finding_id": "ace9b05a89",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Biorius Address",
@@ -260,11 +275,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-015_hint.png"
+        "output\\gpt_vision\\crops\\ace9b05a89_hint.png"
       ]
     },
     {
-      "id": "D-016",
+      "id": "ded58bef0d",
+      "finding_id": "ded58bef0d",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Formula Country of Origin",
@@ -276,11 +292,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-016_hint.png"
+        "output\\gpt_vision\\crops\\ded58bef0d_hint.png"
       ]
     },
     {
-      "id": "D-017",
+      "id": "b16362b1b8",
+      "finding_id": "b16362b1b8",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Formula Country of Origin",
@@ -292,11 +309,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-017_hint.png"
+        "output\\gpt_vision\\crops\\b16362b1b8_hint.png"
       ]
     },
     {
-      "id": "TIER1-018",
+      "id": "b4d47006b8",
+      "finding_id": "b4d47006b8",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Ingredient List (Formula #)",
@@ -310,11 +328,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\TIER1-018_hint.png"
+        "output\\gpt_vision\\crops\\b4d47006b8_hint.png"
       ]
     },
     {
-      "id": "D-019",
+      "id": "3c238923ee",
+      "finding_id": "3c238923ee",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Ingredient List",
@@ -328,11 +347,12 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-019_hint.png"
+        "output\\gpt_vision\\crops\\3c238923ee_hint.png"
       ]
     },
     {
-      "id": "D-019",
+      "id": "72855a7565",
+      "finding_id": "72855a7565",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Social Handles",
@@ -344,7 +364,7 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\D-019_hint.png"
+        "output\\gpt_vision\\crops\\72855a7565_hint.png"
       ]
     }
   ]

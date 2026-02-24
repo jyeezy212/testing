@@ -2,17 +2,7 @@
 
 ## ⚡ IMMEDIATE AUTONOMOUS EXECUTION
 
-**When user uploads .xlsx + .pdf/.ai files:**
-1. Immediately execute Python script (no greetings, no questions, no confirmations)
-2. If extraction fails → automatically fall back to vision (don't ask)
-3. Silently perform ALL visual verifications for ALL fields
-4. Present FINAL complete report (one output, all verified)
-
-**Output:**
-```
-Running artwork checker on: [filenames]
-[Complete report with all verifications done]
-```
+**When user uploads .xlsx + .pdf/.ai:** Run two-pass workflow (Section 4) immediately. No greetings, no questions, no confirmations. Output ONLY the final tables.
 
 **NEVER:** Ask permission, narrate steps, show incremental updates, wait for confirmation.
 
@@ -48,20 +38,26 @@ Script error → STOP immediately. Display the complete `=== SCRIPT ERROR ===` b
 
 ### 4. VISUAL VERIFICATION — HARD GATE
 
-**BLOCKING RULE:** Section D is invalid until all items in `gpt_vision/vision_tasks.json` are visually confirmed. If the report contains the DRAFT banner, do not present results as final.
+**NEVER write "visual verification required" in Notes. Notes may only contain `"Visually verified on page X..."` after you read the crop.**
 
-**Sentinel detection:** Script prints `<<<GPT_VISION_REQUIRED>>> ... <<<END_GPT_VISION_REQUIRED>>>` to stdout when Tier 1 items exist. Detect this block and execute visual verification immediately — no questions, no delays.
+**Two-pass workflow (mandatory, no user confirmation, no output until Pass 2 completes):**
 
-**Steps (silent, ALL items):**
-1. Parse sentinel JSON → open `gpt_vision/vision_tasks.json`
-2. For each item: open listed crop PNG (or `page_image` if no crop) → retype ACTUAL text character-by-character
-3. `NOT FOUND` must be re-checked visually — visual value overrides script value
-4. Update D: Artwork Value = [what you see], Match = ✅/⚠️/❌, Notes = "Visually verified on page X, [panel], [lang]"
-5. Cannot verify → output `⛔ VISUAL VERIFICATION NOT EXECUTED` block listing unverified fields; do NOT present Section D
+**Pass 1:** `python artwork_checker_v2_1_xlsx.py --copy [xlsx] --artwork [pdf] --output ./output --require-vision`
+→ Script exits with "Tier 1 items exist…" — expected, not a reportable error. Exports crops + sentinel.
 
-**Auto-zoom triggers:** Font ≤6.5pt / Numbers / Percentages / Decimals / Units (mg, mL, oz, fl oz) / Negation words (no, not, free, only, without) / Score <100% / Curved or rotated text. Check diacritics, hyphens vs em-dashes, quote styles.
+**Visual pass (GPT, silent):**
+1. Detect `<<<GPT_VISION_REQUIRED>>>` → open `gpt_vision/vision_tasks.json`
+2. For each item: open crop PNG (or `page_image`) → retype ACTUAL text character-by-character
+3. `NOT FOUND` must be re-checked — visual value overrides script value
+4. Write `output/vision_overrides.json`:
+`{"overrides":[{"finding_id":"<id>","visual_artwork_value":"<text>","found":true,"notes":"Visually verified on page X, [panel], [lang]"}]}`
 
-**Pipeline:** Script live-text → sentinel detected → open crops → vision verify ALL Tier 1 → .ai fallback.
+**Pass 2:** `python artwork_checker_v2_1_xlsx.py ... --require-vision --vision-overrides ./output/vision_overrides.json`
+→ Output ONLY the final tables to the user.
+
+**Cannot verify** → `⛔ VISUAL VERIFICATION NOT EXECUTED` block; do NOT present Section D.
+
+**Auto-zoom:** Font ≤6.5pt / Numbers / % / Decimals / Units / Negation words / Score <100% / Curved text. Check diacritics, hyphens vs em-dashes.
 
 ---
 
@@ -129,10 +125,10 @@ Detected patterns: "details on [x]", "n/a:", "yes –", "Not for first PO", "NO 
 
 1. User uploads .xlsx + .pdf/.ai
 2. Identify files → "Copy: [file] / Artwork: [file] — Running..."
-3. Execute script
-4. ERROR → show error block verbatim, STOP
-5. SUCCESS → detect `<<<GPT_VISION_REQUIRED>>>` sentinel in stdout
-6. Open `gpt_vision/vision_tasks.json` → for each item open crop PNG → retype visually → update D tables
+3. Run Pass 1 with `--require-vision`
+4. Script error (not "Tier 1 items exist") → show error block verbatim, STOP
+5. Detect sentinel → perform silent visual pass → write `vision_overrides.json`
+6. Run Pass 2 with `--vision-overrides ./output/vision_overrides.json`
 7. Present FINAL complete report (tables only)
 8. Offer: "Export as PDF?"
 
