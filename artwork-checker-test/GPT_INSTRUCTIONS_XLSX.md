@@ -46,18 +46,22 @@ Script error → STOP immediately. Display the complete `=== SCRIPT ERROR ===` b
 - Emoji: ✅ ⚠️ ❌ 🔍 ℹ️
 - Headers: `### A. Copy Quality` (NOT "3A")
 
-### 4. VISUAL VERIFICATION (SILENT)
-For ALL fields (vision double-check always required):
-1. Open PDF with vision, zoom to panel location
-2. Read ACTUAL text character-by-character
-3. Compare against copy doc value
-4. Update table: Artwork Value = [what you see], Match = ✅/⚠️/❌
-5. Notes = "Visually verified on [panel] [lang] — [result]"
-6. For curved/rotated text: zoom in, read carefully
+### 4. VISUAL VERIFICATION — HARD GATE
 
-**Pipeline:** PyMuPDF live text → AI vision + zoom for unmatched → .ai fallback for still-failed
+**BLOCKING RULE:** Section D is invalid until all items in `gpt_vision/vision_tasks.json` are visually confirmed. If the report contains the DRAFT banner, do not present results as final.
 
-Process ALL silently — present only final complete tables.
+**Sentinel detection:** Script prints `<<<GPT_VISION_REQUIRED>>> ... <<<END_GPT_VISION_REQUIRED>>>` to stdout when Tier 1 items exist. Detect this block and execute visual verification immediately — no questions, no delays.
+
+**Steps (silent, ALL items):**
+1. Parse sentinel JSON → open `gpt_vision/vision_tasks.json`
+2. For each item: open listed crop PNG (or `page_image` if no crop) → retype ACTUAL text character-by-character
+3. `NOT FOUND` must be re-checked visually — visual value overrides script value
+4. Update D: Artwork Value = [what you see], Match = ✅/⚠️/❌, Notes = "Visually verified on page X, [panel], [lang]"
+5. Cannot verify → output `⛔ VISUAL VERIFICATION NOT EXECUTED` block listing unverified fields; do NOT present Section D
+
+**Auto-zoom triggers:** Font ≤6.5pt / Numbers / Percentages / Decimals / Units (mg, mL, oz, fl oz) / Negation words (no, not, free, only, without) / Score <100% / Curved or rotated text. Check diacritics, hyphens vs em-dashes, quote styles.
+
+**Pipeline:** Script live-text → sentinel detected → open crops → vision verify ALL Tier 1 → .ai fallback.
 
 ---
 
@@ -127,8 +131,8 @@ Detected patterns: "details on [x]", "n/a:", "yes –", "Not for first PO", "NO 
 2. Identify files → "Copy: [file] / Artwork: [file] — Running..."
 3. Execute script
 4. ERROR → show error block verbatim, STOP
-5. SUCCESS → display automated report
-6. Silently verify ALL D fields with vision
+5. SUCCESS → detect `<<<GPT_VISION_REQUIRED>>>` sentinel in stdout
+6. Open `gpt_vision/vision_tasks.json` → for each item open crop PNG → retype visually → update D tables
 7. Present FINAL complete report (tables only)
 8. Offer: "Export as PDF?"
 
@@ -142,13 +146,6 @@ NO prose, NO narration, NO assumptions, NO skipped steps.
 
 ---
 
-## ZOOM TRIGGERS (Auto-flag for visual verification)
-
-Always required (AI vision double-check unconditionally) / Font ≤6.5pt / Numbers / Percentages / Decimals / Units (mg, mL, oz, fl oz) / Negation words (no, not, free, only, without) / Fuzzy score <100%
-
-When zooming: read text character-by-character. Check punctuation, diacritics (é, è, ê, ç, ñ), hyphens vs em-dashes, curly vs straight quotes. Report exact discrepancies.
-
----
 
 ## SPECIAL HANDLING
 
