@@ -1,9 +1,16 @@
 {
   "enabled": true,
-  "artwork_pdf": "test_files\\1. Amika_Body_BodyWash_400ML_FinalAW_060625.pdf",
+  "artwork_pdf": "test_files\\5__Amika_Body_BodyButter_Carton_AW_090225_VC_22640.pdf",
   "output_dir": "output\\gpt_vision",
   "page_images": {
     "1": "output\\gpt_vision\\pages\\page_1.png"
+  },
+  "page_strips": {
+    "1": [
+      "output\\gpt_vision\\strips\\page_1_left.png",
+      "output\\gpt_vision\\strips\\page_1_right.png",
+      "output\\gpt_vision\\strips\\page_1_bottom.png"
+    ]
   },
   "items": [
     {
@@ -12,10 +19,10 @@
       "panel": "Front Panel",
       "language": "English",
       "field_name": "Product Name",
-      "copy_value": "shower thoughts",
-      "script_artwork_value": "shower thoughts",
-      "script_match_type": "exact",
-      "status_code": "ATTN",
+      "copy_value": "big embrace",
+      "script_artwork_value": "NOT FOUND",
+      "script_match_type": "missing",
+      "status_code": "FAIL",
       "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
@@ -29,10 +36,10 @@
       "panel": "Front Panel",
       "language": "English",
       "field_name": "Secondary Name",
-      "copy_value": "soft + silky body wash",
-      "script_artwork_value": "soft + silky body wash",
-      "script_match_type": "exact",
-      "status_code": "ATTN",
+      "copy_value": "smoothing whipped body butter",
+      "script_artwork_value": "NOT FOUND",
+      "script_match_type": "missing",
+      "status_code": "FAIL",
       "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
@@ -46,10 +53,10 @@
       "panel": "Front Panel",
       "language": "French",
       "field_name": "Secondary Name",
-      "copy_value": "gel douche doux + soyeux",
-      "script_artwork_value": "gel douche doux + soyeux",
-      "script_match_type": "exact",
-      "status_code": "ATTN",
+      "copy_value": "beurre corporel fouetté apaisant",
+      "script_artwork_value": "NOT FOUND",
+      "script_match_type": "missing",
+      "status_code": "FAIL",
       "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
@@ -63,8 +70,8 @@
       "panel": "Front Panel",
       "language": "English",
       "field_name": "Fill Weight",
-      "copy_value": "400 ML / 13.5 US FL. OZ.",
-      "script_artwork_value": "400 ML / 13.5 US FL. OZ.",
+      "copy_value": "250 ML / 8.5 US FL. OZ.",
+      "script_artwork_value": "250 ML / 8.5 US FL. OZ.",
       "script_match_type": "exact",
       "status_code": "TBD",
       "zoom_reasons": [
@@ -75,46 +82,10 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\4c46c94010_Q1.png",
-        "output\\gpt_vision\\crops\\4c46c94010_Q2.png",
-        "output\\gpt_vision\\crops\\4c46c94010_Q3.png",
-        "output\\gpt_vision\\crops\\4c46c94010_Q4.png"
-      ]
-    },
-    {
-      "id": "06e747d3c4",
-      "finding_id": "06e747d3c4",
-      "panel": "Front Panel",
-      "language": "English",
-      "field_name": "Scent",
-      "copy_value": "amika:aura",
-      "script_artwork_value": "amika:aura",
-      "script_match_type": "exact",
-      "status_code": "ATTN",
-      "zoom_reasons": [],
-      "page_guess": 1,
-      "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\06e747d3c4_hint.png"
-      ]
-    },
-    {
-      "id": "263c147a62",
-      "finding_id": "263c147a62",
-      "panel": "Back Panel",
-      "language": "English",
-      "field_name": "Marketing + Usage Copy 1",
-      "copy_value": "go ahead + get lost in your shower thoughts. infused with hydrating glycerin + gentle fruit AHAs derived from mango, banana + cajá plum, this silky formula cleanses without stripping moisture — leaving your skin soft + smooth.",
-      "script_artwork_value": "go ahead + get lost in your shower thoughts. infused with hydrating glycerin + gentle fruit AHAs derived from mango, banana + cajá plum, this silky formula cleanses without stripping moisture — leaving your skin soft",
-      "script_match_type": "near",
-      "status_code": "ATTN",
-      "zoom_reasons": [
-        "Contains negation word: 'without'"
-      ],
-      "page_guess": 1,
-      "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\263c147a62_hint.png"
+        "output\\gpt_vision\\pages\\page_1.png",
+        "output\\gpt_vision\\strips\\page_1_left.png",
+        "output\\gpt_vision\\strips\\page_1_right.png",
+        "output\\gpt_vision\\strips\\page_1_bottom.png"
       ]
     },
     {
@@ -123,13 +94,11 @@
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Marketing + Usage Copy 1",
-      "copy_value": "FR_ plongez au cœur d'une bulle de douceur. conçue à base de glycérine hydratante et d'acides de fruits adoucissants (AHA) issus de la mangue, de la banane et du cajá, cette formule veloutée nettoie votre peau sans la déshydrater. elle la laisse douce et soyeuse.",
-      "script_artwork_value": "FR_plongez au cœur d'une bulle de douceur. conçue à base de glycérine hydratante et d'acides de fruits adoucissants (AHA) issus de la mangue, de la banane et du cajá, cette formule veloutée nettoie votre peau sans la déshydrater. elle la laisse douce et soyeuse.",
-      "script_match_type": "near",
-      "status_code": "ATTN",
-      "zoom_reasons": [
-        "Contains negation word: 'sans'"
-      ],
+      "copy_value": "Ce beurre corporel nourrissant étreint votre peau telle une caresse réconfortante, grâce aux céramides hydratants + au beurre de karité qu'il contient. pour une peau douce, souple + repulpée.",
+      "script_artwork_value": "ce beurre corporel nourrissant étreint votre peau telle une caresse réconfortante, grâce aux céramides hydratants + au beurre de karité qu'il contient.",
+      "script_match_type": "mismatch",
+      "status_code": "FAIL",
+      "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
@@ -137,63 +106,12 @@
       ]
     },
     {
-      "id": "17289ac55c",
-      "finding_id": "17289ac55c",
+      "id": "76fd749e11",
+      "finding_id": "76fd749e11",
       "panel": "Back Panel",
       "language": "English",
-      "field_name": "Marketing + Usage Copy 2",
-      "copy_value": "scented with juicy, uplifting amika:aura",
-      "script_artwork_value": "+ smooth. scented with juicy, uplifting amika:aura",
-      "script_match_type": "mismatch",
-      "status_code": "FAIL",
-      "zoom_reasons": [],
-      "page_guess": 1,
-      "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\17289ac55c_hint.png"
-      ]
-    },
-    {
-      "id": "0f63589dd3",
-      "finding_id": "0f63589dd3",
-      "panel": "Back Panel",
-      "language": "French",
-      "field_name": "Marketing + Usage Copy 2",
-      "copy_value": "fragrance fruitée et enivrante \"amika:aura\"",
-      "script_artwork_value": "fragrance fruitée et enivrante \"amika:aura\"",
-      "script_match_type": "exact",
-      "status_code": "ATTN",
-      "zoom_reasons": [],
-      "page_guess": 1,
-      "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\0f63589dd3_hint.png"
-      ]
-    },
-    {
-      "id": "f0d9346e18",
-      "finding_id": "f0d9346e18",
-      "panel": "Back Panel",
-      "language": "English",
-      "field_name": "Marketing + Usage Copy 3",
-      "copy_value": "massage all over your body into a lather to cleanse skin. rinse well. gentle enough for daily use.",
-      "script_artwork_value": "massage all over your body into a lather to cleanse skin. rinse well. gentle enough for daily use.",
-      "script_match_type": "exact",
-      "status_code": "ATTN",
-      "zoom_reasons": [],
-      "page_guess": 1,
-      "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\f0d9346e18_hint.png"
-      ]
-    },
-    {
-      "id": "dc5fea7347",
-      "finding_id": "dc5fea7347",
-      "panel": "Back Panel",
-      "language": "French",
-      "field_name": "Marketing + Usage Copy 3",
-      "copy_value": "appliquez le produit sur l'ensemble de votre corps et faites-le mousser. rincez soigneusement. convient à un usage quotidien.",
+      "field_name": "Pack Claim 3",
+      "copy_value": "for all skin tones",
       "script_artwork_value": "NOT FOUND",
       "script_match_type": "missing",
       "status_code": "FAIL",
@@ -201,41 +119,92 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\dc5fea7347_hint.png"
+        "output\\gpt_vision\\crops\\76fd749e11_hint.png"
       ]
     },
     {
-      "id": "1c58a528fc",
-      "finding_id": "1c58a528fc",
-      "panel": "Back Panel",
-      "language": "English",
-      "field_name": "Warning",
-      "copy_value": "sunburn alert: this product contains an alpha hydroxy acid (AHA) that may increase your skin's sensitivity to the sun and particularly the possibility of sunburn. use a sunscreen, wear protective clothing, and limit sun exposure while using this product and for a week afterwards. avoid contact with eyes.",
-      "script_artwork_value": "sunburn alert: this product contains an alpha hydroxy acid (AHA) that may increase your skin's sensitivity to the sun and particularly the possibility of sunburn. use a sunscreen, wear protective clothing, and limit sun exposure while using this product and for a week afterwards. avoid contact with eyes.",
-      "script_match_type": "exact",
-      "status_code": "ATTN",
-      "zoom_reasons": [],
-      "page_guess": 1,
-      "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\1c58a528fc_hint.png"
-      ]
-    },
-    {
-      "id": "3185034f29",
-      "finding_id": "3185034f29",
+      "id": "f5c4ca4c5c",
+      "finding_id": "f5c4ca4c5c",
       "panel": "Back Panel",
       "language": "French",
-      "field_name": "Warning",
-      "copy_value": "exposition au soleil : ce produit contient un acide alpha-hydroxylé (AHA) qui peut augmenter la sensibilité de votre peau au soleil, ainsi que les risques de coups de soleil. utilisez une protection solaire, portez des vêtements protecteurs et limitez l'exposition au soleil lorsque vous utilisez ce produit et pendant la semaine qui suit. évitez tout contact avec les yeux.",
-      "script_artwork_value": "exposition au soleil : ce produit contient un acide alpha-hydroxylé (AHA) qui peut augmenter la sensibilité de votre peau au soleil, ainsi que les risques de coups de soleil. utilisez une protection solaire, portez des vêtements protecteurs et limitez l'exposition au soleil lorsque vous utilisez ce produit et pendant la semaine qui suit. évitez tout contact avec les yeux.",
-      "script_match_type": "exact",
+      "field_name": "Pack Claim 3",
+      "copy_value": "idéal pour toutes les carnations",
+      "script_artwork_value": "NOT FOUND",
+      "script_match_type": "missing",
+      "status_code": "FAIL",
+      "zoom_reasons": [],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "crops": [
+        "output\\gpt_vision\\crops\\f5c4ca4c5c_hint.png"
+      ]
+    },
+    {
+      "id": "4a5403d72f",
+      "finding_id": "4a5403d72f",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Hero Ingredient Call-outs 2",
+      "copy_value": "complexe céramides : hydrate intensément + redonne de la souplesse à la peau",
+      "script_artwork_value": "complexe céramides hydrate intensément + redonne de la souplesse à la peau",
+      "script_match_type": "near",
       "status_code": "ATTN",
       "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\3185034f29_hint.png"
+        "output\\gpt_vision\\crops\\4a5403d72f_hint.png"
+      ]
+    },
+    {
+      "id": "399da619b9",
+      "finding_id": "399da619b9",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Hero Ingredient Call-outs 3",
+      "copy_value": "acide lipo-hydroxy (LHA) : exfolie en douceur pour une peau plus lisse",
+      "script_artwork_value": "acide lipo-hydroxy (LHA) exfolie en douceur pour une peau plus lisse",
+      "script_match_type": "near",
+      "status_code": "ATTN",
+      "zoom_reasons": [],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "crops": [
+        "output\\gpt_vision\\crops\\399da619b9_hint.png"
+      ]
+    },
+    {
+      "id": "b3d825ab62",
+      "finding_id": "b3d825ab62",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Hero Ingredient Call-outs 4",
+      "copy_value": "beurre de karité régénérant : ses propriétés nourrissantes laissent votre peau douce et hydratée",
+      "script_artwork_value": "beurre de karité régénérant ses propriétés nourrissantes laissent votre peau douce et hydratée",
+      "script_match_type": "near",
+      "status_code": "ATTN",
+      "zoom_reasons": [],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "crops": [
+        "output\\gpt_vision\\crops\\b3d825ab62_hint.png"
+      ]
+    },
+    {
+      "id": "30696abef7",
+      "finding_id": "30696abef7",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Hero Ingredient Call-outs 5",
+      "copy_value": "l'argousier : nourrit + préserve l'hydratation de la peau grâce aux vitamines, aux lipides et aux antioxydants bénéfiques qu'il contient",
+      "script_artwork_value": "l'argousier nourrit + préserve l'hydratation de la peau grâce aux vitamines, aux lipides et aux antioxydants bénéfiques qu'il contient",
+      "script_match_type": "near",
+      "status_code": "ATTN",
+      "zoom_reasons": [],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "crops": [
+        "output\\gpt_vision\\crops\\30696abef7_hint.png"
       ]
     },
     {
@@ -244,10 +213,10 @@
       "panel": "Back Panel",
       "language": "English",
       "field_name": "PCR Callout (if needed)",
-      "copy_value": "this bottle is made with 50% post consumer recyclables.",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
-      "status_code": "FAIL",
+      "copy_value": "this jar is made with 50% post consumer recyclables.",
+      "script_artwork_value": "this jar is made with 50% post-consumer recyclables.",
+      "script_match_type": "near",
+      "status_code": "ATTN",
       "zoom_reasons": [
         "Contains numbers",
         "Contains percentage"
@@ -264,10 +233,10 @@
       "panel": "Back Panel",
       "language": "French",
       "field_name": "PCR Callout (if needed)",
-      "copy_value": "FR_cette bouteille contient 50% de matériaux recyclés.",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
-      "status_code": "FAIL",
+      "copy_value": "ce pot contient 50% de matériaux recyclés.",
+      "script_artwork_value": "ce pot contient 50% de matériaux recyclés.",
+      "script_match_type": "exact",
+      "status_code": "TBD",
       "zoom_reasons": [
         "Contains numbers",
         "Contains percentage"
@@ -285,9 +254,9 @@
       "language": "English",
       "field_name": "Address Block",
       "copy_value": "amika Brooklyn, NY 11249 USA",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
-      "status_code": "FAIL",
+      "script_artwork_value": "amika Brooklyn, NY 11249 USA",
+      "script_match_type": "exact",
+      "status_code": "TBD",
       "zoom_reasons": [
         "Contains numbers"
       ],
@@ -304,8 +273,8 @@
       "language": "English",
       "field_name": "Biorius Address",
       "copy_value": "BIORIUS / EU: Wavre, BE, UK: London, WC2H 9JQ, GB",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
+      "script_artwork_value": "BIORIUS / EU : Wavre, BE / UK : London WC2H 9JQ, GB",
+      "script_match_type": "mismatch",
       "status_code": "FAIL",
       "zoom_reasons": [
         "Contains numbers"
@@ -313,10 +282,7 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\ace9b05a89_Q1.png",
-        "output\\gpt_vision\\crops\\ace9b05a89_Q2.png",
-        "output\\gpt_vision\\crops\\ace9b05a89_Q3.png",
-        "output\\gpt_vision\\crops\\ace9b05a89_Q4.png"
+        "output\\gpt_vision\\crops\\ace9b05a89_hint.png"
       ]
     },
     {
@@ -326,9 +292,9 @@
       "language": "English",
       "field_name": "Formula Country of Origin",
       "copy_value": "made in USA with global materials",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
-      "status_code": "FAIL",
+      "script_artwork_value": "made in USA with global materials",
+      "script_match_type": "exact",
+      "status_code": "ATTN",
       "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
@@ -343,9 +309,9 @@
       "language": "French",
       "field_name": "Formula Country of Origin",
       "copy_value": "fabriqué aux États-Unis avec des matériaux internationaux",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
-      "status_code": "FAIL",
+      "script_artwork_value": "fabriqué aux États-Unis avec des matériaux internationaux",
+      "script_match_type": "exact",
+      "status_code": "ATTN",
       "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
@@ -359,8 +325,8 @@
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Ingredient List (Formula #)",
-      "copy_value": "(22403)",
-      "script_artwork_value": "(22403)",
+      "copy_value": "(22640)",
+      "script_artwork_value": "(22640)",
       "script_match_type": "exact",
       "status_code": "OK",
       "zoom_reasons": [
@@ -378,9 +344,9 @@
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Ingredient List",
-      "copy_value": "Glycerin, Water/Aqua/Eau, Cocamidopropyl Betaine, Sodium Cocoyl Isethionate, Decyl Glucoside, PEG-150 Distearate, Hippophae Rhamnoides (Sea Buckthorn/Agrousier) Fruit/Seed Oil, Jasmine Oil/Extract, Sanguisorba Officinalis Root Extract, Spondias Mombin (Hog Plum/Prune de Porc) Pulp Extract, Mangifera Indica (Mango/Mangue) Pulp Extract, Musa Sapientum (Banana/Banane) Pulp Extract, Bromelain, Bixa Orellana Seed Extract, Coconut Acid, Sodium Isethionate, Glucose, Propanediol, Citric Acid, Benzyl Alcohol, Potassium Sorbate, Phenoxyethanol, Ethylhexylglycerin, Tetrasodium Glutamate Diacetate, Fragrance/Parfum, Benzyl Benzoate, Hydroxycitronellal, Limonene, Tetramethyl Acetyloctahydronaphthalenes",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
+      "copy_value": "Water/Aqua/Eau, Cocos Nucifera (Coconut/Nuix de Coco) Oil, Isopropyl Palmitate, Cetearyl Alcohol, Butyrospermum Parkii (Shea) Butter, Glycerin, Caprylic/Capric Triglyceride, Stearic Acid, Theobroma Cacao (Cocoa) Seed Butter, Ceramide Np, Hippophae Rhamnoides (Sea Buckthorn/Agrousier) Fruit/Seed Oil, Capryloyl Salicylic Acid, Jasmine Oil/Extract, Sanguisorba Officinalis Root Extract, Saccharide Isomerate, Panthenol, Dimethicone, Propanediol, Hydroxyapatite, Hydroxyethylcellulose, Ethylhexylglycerin, Phenoxyethanol, Polysorbate 60, Citric Acid, Sodium Citrate, Sodium Hydroxide, Sodium Phosphate, Disodium Phosphate, Carbomer, Chlorphenesin, Tocopherol, Fragrance/Parfum, Benzyl Benzoate, Hydroxycitronellal, Limonene, Citronellal, Coumarin, Geraniol, Tetramethyl Acetyloctahydronaphthalenes, Vanillin, Rose Ketones",
+      "script_artwork_value": "(Shea) Butter, Glycerin, Caprylic/Capric Triglyceride, Stearic Acid, Theobroma Cacao (Cocoa) Seed Butter, Ceramide Np, Hippophae Rhamnoides (Sea Buckthorn/Agrousier) Fruit/Seed Oil, Capryloyl Salicylic Acid, Jasmine Oil/Extract, Sanguisorba Officinalis Root Extract, Saccharide Isomerate, Panthenol, Dimethicone, Propanediol, Hydroxyapatite, Hydroxyethylcellulose, Ethylhexylglycerin, Phenoxyethanol, Polysorbate 60, Citric Acid, Sodium Citrate, Sodium Hydroxide, Sodium Phosphate, Disodium Phosphate, Carbomer, Chlorphenesin, Tocopherol, Fragrance/Parfum, Benzyl Benzoate, Hydroxycitronellal, Limonene, Citronellal, Coumarin, Geraniol, Tetramethyl",
+      "script_match_type": "mismatch",
       "status_code": "FAIL",
       "zoom_reasons": [
         "Contains numbers"
@@ -398,37 +364,14 @@
       "language": "English",
       "field_name": "Social Handles",
       "copy_value": "loveamika.com/recycle",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
-      "status_code": "FAIL",
+      "script_artwork_value": "loveamika.com/recycle",
+      "script_match_type": "exact",
+      "status_code": "ATTN",
       "zoom_reasons": [],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\72855a7565_Q1.png",
-        "output\\gpt_vision\\crops\\72855a7565_Q2.png",
-        "output\\gpt_vision\\crops\\72855a7565_Q3.png",
-        "output\\gpt_vision\\crops\\72855a7565_Q4.png"
-      ]
-    },
-    {
-      "id": "3ac4a4e77c",
-      "finding_id": "3ac4a4e77c",
-      "panel": "Back Panel",
-      "language": "English",
-      "field_name": "UPC",
-      "copy_value": "#VALUE!",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
-      "status_code": "FAIL",
-      "zoom_reasons": [],
-      "page_guess": 1,
-      "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\3ac4a4e77c_Q1.png",
-        "output\\gpt_vision\\crops\\3ac4a4e77c_Q2.png",
-        "output\\gpt_vision\\crops\\3ac4a4e77c_Q3.png",
-        "output\\gpt_vision\\crops\\3ac4a4e77c_Q4.png"
+        "output\\gpt_vision\\crops\\72855a7565_hint.png"
       ]
     }
   ]
