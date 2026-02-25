@@ -1,8 +1,29 @@
+---
+> ⚠️ **DRAFT REPORT — VISUAL VERIFICATION PENDING**
+>
+> This report was produced by **automated text extraction only**.
+> It is **NOT final**. A `<<<GPT_VISION_REQUIRED>>>` sentinel block was printed to stdout.
+> Before presenting results to the user, the GPT must:
+> 1. Read the sentinel JSON and open `gpt_vision/vision_tasks.json`.
+> 2. For **every item**, open the listed crop (or `page_image`) and retype visible text character by character.
+> 3. Any `NOT FOUND` result must be re-checked visually — visual value overrides the script value.
+> 4. Each Section D row Notes column must begin with `Visually verified on page X, [panel], [language]`.
+> 5. If visual verification cannot be performed, output a `⛔ VISUAL VERIFICATION NOT EXECUTED` block listing all unverified fields.
+>
+> **Do not remove this banner or present the report as final until all items in `vision_tasks.json` are verified.**
+---
+
 # Artwork Verification Report
 
+<<<<<<< HEAD
 *Generated: 2026-02-25 17:47:35*
+=======
+*Generated: 2026-02-24 13:43:04*
+>>>>>>> parent of 0fb72ec (update)
 
 *Checker Version: 2.1.0*
+
+*Vision verification: 🔍 REQUIRED — run Custom GPT visual pass on `gpt_vision/vision_tasks.json`*
 
 
 ## 1️⃣ Project Header
@@ -55,8 +76,8 @@
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
-| Product Name | big embrace | NOT FOUND | ❌ | [D-001] |
-| Secondary Name | smoothing whipped body butter | NOT FOUND | ❌ | [D-002] |
+| Product Name | big embrace | NOT FOUND | ❌ | [D-001] NOT FOUND in artwork — requires visual confirmation |
+| Secondary Name | smoothing whipped body butter | NOT FOUND | ❌ | [D-002] NOT FOUND in artwork — requires visual confirmation |
 | Fill Weight | 250 ML / 8.5 US FL. OZ. | 250 ML / 8.5 US FL. OZ. | ✅ | [D-004] Exact match |
 | Scent | amika:aura | amika:aura | ✅ | Exact match |
 
@@ -64,7 +85,7 @@
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
-| Secondary Name | beurre corporel fouetté apaisant | NOT FOUND | ❌ | [D-003] |
+| Secondary Name | beurre corporel fouetté apaisant | NOT FOUND | ❌ | [D-003] NOT FOUND in artwork — requires visual confirmation |
 
 **Back Panel — English**
 
@@ -75,7 +96,7 @@
 | Marketing + Usage Copy 3 | use it: apply onto body, massaging... | use it: apply onto body, massaging... | ✅ | Exact match |
 | Pack Claim 1 | friend to skin | friend to skin | ✅ | Exact match |
 | Pack Claim 2 | clinically proven | clinically proven | ✅ | Exact match |
-| Pack Claim 3 | for all skin tones | NOT FOUND | ❌ | [D-006] |
+| Pack Claim 3 | for all skin tones | NOT FOUND | ❌ | [D-006] NOT FOUND in artwork — requires visual confirmation |
 | Hero Ingredients Header | key ingredients | key ingredients | ✅ | Exact match |
 | Hero Ingredient Call-outs 2 | ceramide NP: deeply moisturizes +... | ceramide NP: deeply moisturizes +... | ✅ | Exact match |
 | Hero Ingredient Call-outs 3 | lipohydroxy acid: gently exfoliates... | lipohydroxy acid: gently exfoliates... | ✅ | Exact match |
@@ -84,22 +105,33 @@
 | Warning | avoid contact with eyes. | avoid contact with eyes. | ✅ | Exact match |
 | PCR Callout (if needed) | this jar is made with 50% post... | this jar is made with 50%... | ⚠️ | [D-012] Near match (98.1%) — verify differences |
 | Address Block | amika Brooklyn, NY 11249 USA | amika Brooklyn, NY 11249 USA | ✅ | [D-014] Exact match; Text is underlined in artwork but... |
+<<<<<<< HEAD
 | Biorius Address | BIORIUS / EU: Wavre, BE, UK: London,... | BIORIUS / EU : Wavre, BE / UK :... | ❌ | [D-015] Mismatch (94.0%); Text is underlined in artwork... |
 | Formula Country of Origin | made in USA with global materials | made in USA with global materials | ✅ | [D-016] Exact match; Text is underlined in artwork but... |
 | Ingredient List (Formula #) | (22640) | (22640) | ✅ | Formula number match |
 | Ingredient List | Water/Aqua/Eau, Cocos Nucifera... | (Shea) Butter, Glycerin,... | ❌ | [D-019] Mismatch (88.3%) |
+=======
+| Biorius Address | BIORIUS / EU: Wavre, BE, UK: London,... | NOT FOUND | ❌ | [D-015] NOT FOUND in artwork — requires visual confirmation |
+| Formula Country of Origin | made in USA with global materials | made in USA with global materials | ✅ | [D-016] Exact match; Text is underlined in artwork but... |
+| Ingredient List (Formula #) | (22640) | (22640) | ✅ | Formula number match |
+| Ingredient List | Water/Aqua/Eau, Cocos Nucifera... | NOT FOUND | ❌ | [D-019] NOT FOUND in artwork — requires visual confirmation |
+>>>>>>> parent of 0fb72ec (update)
 | Social Handles | loveamika.com/recycle | loveamika.com/recycle | ✅ | [D-019] Exact match; Text is underlined in artwork but... |
 
 **Back Panel — French**
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
+<<<<<<< HEAD
 | Marketing + Usage Copy 1 | Ce beurre corporel nourrissant... | ce beurre corporel nourrissant... | ❌ | [D-005] Mismatch (87.7%) \| Note: copy doc flagged in A |
+=======
+| Marketing + Usage Copy 1 | Ce beurre corporel nourrissant... | NOT FOUND | ❌ | [D-005] NOT FOUND in artwork — requires visual... |
+>>>>>>> parent of 0fb72ec (update)
 | Marketing + Usage Copy 2 | fragrance fruitée et enivrante... | fragrance fruitée et enivrante... | ✅ | Exact match |
 | Marketing + Usage Copy 3 | utilisation : appliquez sur le corps... | utilisation : appliquez sur le corps... | ✅ | Exact match |
 | Pack Claim 1 | l'ami de votre peau | l'ami de votre peau | ✅ | Exact match |
 | Pack Claim 2 | cliniquement prouvé | cliniquement prouvé | ✅ | Exact match |
-| Pack Claim 3 | idéal pour toutes les carnations | NOT FOUND | ❌ | [D-007] |
+| Pack Claim 3 | idéal pour toutes les carnations | NOT FOUND | ❌ | [D-007] NOT FOUND in artwork — requires visual confirmation |
 | Hero Ingredients Header | ingrédients clés | ingrédients clés | ✅ | Exact match |
 | Hero Ingredient Call-outs 2 | complexe céramides : hydrate... | complexe céramides hydrate... | ⚠️ | [D-008] Near match (98.7%) — verify differences |
 | Hero Ingredient Call-outs 3 | acide lipo-hydroxy (LHA) : exfolie... | acide lipo-hydroxy (LHA) exfolie en... | ⚠️ | [D-009] Near match (98.6%) — verify differences |
@@ -126,13 +158,19 @@
 
 | ID | What | Where | Fix | Linked Rows | Status After Fix |
 |----|------|-------|-----|-------------|------------------|
-| D-001 | Missing text | Front Panel — English | Verify | D | TBD |
-| D-002 | Missing text | Front Panel — English | Verify | D | TBD |
-| D-003 | Missing text | Front Panel — French | Verify | D | TBD |
+| D-001 | Missing text | Front Panel — English | NOT FOUND in artwork —... | D | TBD |
+| D-002 | Missing text | Front Panel — English | NOT FOUND in artwork —... | D | TBD |
+| D-003 | Missing text | Front Panel — French | NOT FOUND in artwork —... | D | TBD |
 | D-004 | exact | Front Panel — English | Exact match | D | TBD |
+<<<<<<< HEAD
 | D-005 | Text mismatch | Back Panel — French | Mismatch (87.7%) \| Note:... | A, D | TBD |
 | D-006 | Missing text | Back Panel — English | Verify | D | TBD |
 | D-007 | Missing text | Back Panel — French | Verify | D | TBD |
+=======
+| D-005 | Missing text | Back Panel — French | NOT FOUND in artwork —... | A, D | TBD |
+| D-006 | Missing text | Back Panel — English | NOT FOUND in artwork —... | D | TBD |
+| D-007 | Missing text | Back Panel — French | NOT FOUND in artwork —... | D | TBD |
+>>>>>>> parent of 0fb72ec (update)
 | D-008 | Near match | Back Panel — French | Near match (98.7%) —... | D | TBD |
 | D-009 | Near match | Back Panel — French | Near match (98.6%) —... | D | TBD |
 | D-010 | Near match | Back Panel — French | Near match (98.9%) —... | D | TBD |
@@ -140,10 +178,17 @@
 | D-012 | Near match | Back Panel — English | Near match (98.1%) —... | D | TBD |
 | D-013 | exact | Back Panel — French | Exact match | D | TBD |
 | D-014 | exact | Back Panel — English | Exact match | D | TBD |
+<<<<<<< HEAD
 | D-015 | Text mismatch | Back Panel — English | Mismatch (94.0%) | D | TBD |
 | D-016 | exact | Back Panel — English | Exact match | D | TBD |
 | D-017 | exact | Back Panel — French | Exact match | D | TBD |
 | D-019 | Text mismatch | Back Panel — English | Mismatch (88.3%) | D | TBD |
+=======
+| D-015 | Missing text | Back Panel — English | NOT FOUND in artwork —... | D | TBD |
+| D-016 | exact | Back Panel — English | Exact match | D | TBD |
+| D-017 | exact | Back Panel — French | Exact match | D | TBD |
+| D-019 | Missing text | Back Panel — English | NOT FOUND in artwork —... | D | TBD |
+>>>>>>> parent of 0fb72ec (update)
 | D-019 | exact | Back Panel — English | Exact match | D | TBD |
 
 *1 annotated snapshot(s) generated.*
@@ -162,11 +207,19 @@
 
 | Item |
 |------|
+<<<<<<< HEAD
 | [D-001] Product Name: missing |
 | [D-002] Secondary Name: missing |
 | [D-003] Secondary Name: missing |
 | [D-005] Marketing + Usage Copy 1: Mismatch (87.7%) \| Note: copy doc flagged in A |
 | [D-006] Pack Claim 3: missing |
+=======
+| [D-001] Product Name: NOT FOUND in artwork — requires visual... |
+| [D-002] Secondary Name: NOT FOUND in artwork — requires visual... |
+| [D-003] Secondary Name: NOT FOUND in artwork — requires visual... |
+| [D-005] Marketing + Usage Copy 1: NOT FOUND in artwork — requires visual... |
+| [D-006] Pack Claim 3: NOT FOUND in artwork — requires visual... |
+>>>>>>> parent of 0fb72ec (update)
 
 **Attention (⚠️)**
 
