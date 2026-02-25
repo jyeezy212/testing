@@ -145,7 +145,7 @@ class Config:
     # MATCHING THRESHOLDS
     EXACT_MATCH_THRESHOLD = 100.0
     NEAR_MATCH_THRESHOLD = 95.0
-    MISMATCH_THRESHOLD = 95.0
+    MISMATCH_THRESHOLD = 85.0  # Return best match even if <95%; caller classifies as MISMATCH
 
     # ZOOM TRIGGERS
     ZOOM_FONT_SIZE_THRESHOLD = 6.5
@@ -159,7 +159,7 @@ class Config:
     VISION_ALWAYS_REQUIRED = False
 
     # ROTATION RECONSTRUCTION
-    ROTATION_PROXIMITY_THRESHOLD = 8.0
+    ROTATION_PROXIMITY_THRESHOLD = 15.0  # Wider tolerance for vertical regulatory text stacks
 
     UNIT_PATTERNS = [
         r'\b\d+\s*(mg|g|kg|ml|mL|ML|l|L|oz|OZ|fl\.?\s*oz|FL\.?\s*OZ|pt|qt|gal)\b',
@@ -3240,11 +3240,9 @@ class ArtworkChecker:
                 )
                 if gpt_vision_payload and gpt_vision_payload.get("items"):
                     exporter.print_sentinel(gpt_vision_payload)
-            raise RuntimeError(
-                f"Tier 1 items exist ({sum(1 for f in match_findings if f.artwork_value is None or f.requires_zoom)} items) "
-                "but no --vision-overrides provided. "
-                "GPT must perform visual pass on gpt_vision/vision_tasks.json and supply vision_overrides.json."
-            )
+            n_tier1 = sum(1 for f in match_findings if f.artwork_value is None or f.requires_zoom)
+            print(f"\nPASS_1_COMPLETE: {n_tier1} Tier 1 item(s) queued for visual verification — GPT: open gpt_vision/vision_tasks.json, verify each crop, write output/vision_overrides.json, then run Pass 2.")
+            sys.exit(0)
         elif config.GPT_VISION_EXPORT_ENABLED and artwork_path_used and artwork_path_used.suffix.lower() == ".pdf":
             # Default: always export assets + sentinel (single-pass, GPT handles vision after)
             logger.info("\n[5.5/7] Exporting GPT vision assets for Tier 1 findings...")
