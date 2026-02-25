@@ -1,6 +1,6 @@
 # Artwork Verification Report
 
-*Generated: 2026-02-24 16:38:38*
+*Generated: 2026-02-25 17:47:35*
 
 *Checker Version: 2.1.0*
 
@@ -9,16 +9,16 @@
 
 | Field | Value |
 |-------|-------|
-| Project Name | amika shower thoughts soft + silky body wash 400 ml |
-| Component Type | 1. Body Wash 400ml - Bottle |
+| Project Name | amika big embrace smoothing whipped body butter 250 ml |
+| Component Type | Carton |
 
 
 ## 2️⃣ Files
 
 | Type | Filename | Version | Note |
 |------|----------|---------|------|
-| Copy Document | 1. Body Wash 400ml - Bottle.xlsx | — | 22 fields, 2 instructional notes |
-| Artwork | 1. Amika_Body_BodyWash_400ML_FinalAW_060625.pdf | — | 47 text elements extracted |
+| Copy Document | 5_Body_Butter_250ml_-_Carton.xlsx | — | 37 fields, 2 instructional notes |
+| Artwork | 5__Amika_Body_BodyButter_Carton_AW_090225_VC_22640.pdf | — | 79 text elements extracted |
 
 
 ## 3️⃣ Core Verification Tables
@@ -28,6 +28,7 @@
 
 | Language | Field | Issue Type | Recommendation | Status |
 |----------|-------|------------|----------------|--------|
+| French | Marketing + Usage Copy 1 | Capitalization | 'Ce' should be lowercase 'ce' | ⚠️ |
 | English | PAO Jar, Recycling Icon,... | Instructional note | Remove internal instruction (matched:... | ⚠️ |
 | English | Vegan Icon | Instructional note | Remove internal instruction (matched: \bPO\b) | ⚠️ |
 
@@ -35,13 +36,15 @@
 
 | Language | Claim | Risk Level | Rationale | Regions | Action | Status |
 |----------|-------|------------|-----------|---------|--------|--------|
-| — | No claims detected | — | — | — | — | ✅ |
+| English | friend to skin | Low | Cosmetic/descriptive claim - acceptable | All | Keep | ✅ |
+| English | clinically proven | High | Contains high-risk term: 'clinically... | USA, EU, UK | Escalate | ⚠️ |
+| English | for all skin tones | Low | Cosmetic/descriptive claim - acceptable | All | Keep | ✅ |
 
 ### C. Label-Claim Conversion
 
 | Source | Declared (mL) | Calculated (fl oz) | Declared (fl oz) | Within ±0.10 | Status | Notes |
 |--------|---------------|-------------------|------------------|--------------|--------|-------|
-| Fill Weight | 400.0 | 13.53 | 13.5 | Yes | ✅ | Declared: 13.5 fl oz, Calculated: 13.53 fl oz, Diff: 0.03 |
+| Fill Weight | 250.0 | 8.45 | 8.5 | Yes | ✅ | Declared: 8.5 fl oz, Calculated: 8.45 fl oz, Diff: 0.05 |
 
 ### D. Artwork Match
 
@@ -52,51 +55,66 @@
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
-| Product Name | shower thoughts | shower thoughts | ✅ | [D-001] Exact match; Text is underlined in artwork but... |
-| Secondary Name | soft + silky body wash | soft + silky body wash | ✅ | [D-002] Exact match; Text is underlined in artwork but... |
-| Fill Weight | 400 ML / 13.5 US FL. OZ. | 400 ML / 13.5 US FL. OZ. | ✅ | [D-004] Exact match; Text is underlined in artwork but... |
-| Scent | amika:aura | amika:aura | ✅ | [D-005] Exact match; Text is underlined in artwork but... |
+| Product Name | big embrace | NOT FOUND | ❌ | [D-001] |
+| Secondary Name | smoothing whipped body butter | NOT FOUND | ❌ | [D-002] |
+| Fill Weight | 250 ML / 8.5 US FL. OZ. | 250 ML / 8.5 US FL. OZ. | ✅ | [D-004] Exact match |
+| Scent | amika:aura | amika:aura | ✅ | Exact match |
 
 **Front Panel — French**
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
-| Secondary Name | gel douche doux + soyeux | gel douche doux + soyeux | ✅ | [D-003] Exact match; Text is underlined in artwork but... |
+| Secondary Name | beurre corporel fouetté apaisant | NOT FOUND | ❌ | [D-003] |
 
 **Back Panel — English**
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
-| Marketing + Usage Copy 1 | go ahead + get lost in your shower... | go ahead + get lost in your shower... | ⚠️ | [D-006] Near match (97.7%) — verify differences; Text is... |
-| Marketing + Usage Copy 2 | scented with juicy, uplifting amika:aura | + smooth. scented with juicy,... | ❌ | [D-008] Mismatch (88.9%); Text is underlined in artwork... |
-| Marketing + Usage Copy 3 | massage all over your body into a... | massage all over your body into a... | ✅ | [D-010] Exact match; Text is underlined in artwork but... |
-| Warning | sunburn alert: this product contains... | sunburn alert: this product contains... | ✅ | [D-012] Exact match; Text is underlined in artwork but... |
-| PCR Callout (if needed) | this bottle is made with 50% post... | NOT FOUND | ❌ | [D-014] |
-| Address Block | amika Brooklyn, NY 11249 USA | NOT FOUND | ❌ | [D-016] |
-| Biorius Address | BIORIUS / EU: Wavre, BE, UK: London,... | NOT FOUND | ❌ | [D-017] |
-| Formula Country of Origin | made in USA with global materials | NOT FOUND | ❌ | [D-018] |
-| Ingredient List (Formula #) | (22403) | (22403) | ✅ | Formula number match |
-| Ingredient List | Glycerin, Water/Aqua/Eau,... | NOT FOUND | ❌ | [D-021] |
-| Social Handles | loveamika.com/recycle | NOT FOUND | ❌ | [D-021] |
-| UPC | #VALUE! | NOT FOUND | ❌ | [D-022] |
+| Marketing + Usage Copy 1 | like a big embrace, this nourishing... | like a big embrace, this nourishing... | ✅ | Exact match |
+| Marketing + Usage Copy 2 | scented with juicy, uplifting amika:aura | scented with juicy, uplifting amika:aura | ✅ | Exact match |
+| Marketing + Usage Copy 3 | use it: apply onto body, massaging... | use it: apply onto body, massaging... | ✅ | Exact match |
+| Pack Claim 1 | friend to skin | friend to skin | ✅ | Exact match |
+| Pack Claim 2 | clinically proven | clinically proven | ✅ | Exact match |
+| Pack Claim 3 | for all skin tones | NOT FOUND | ❌ | [D-006] |
+| Hero Ingredients Header | key ingredients | key ingredients | ✅ | Exact match |
+| Hero Ingredient Call-outs 2 | ceramide NP: deeply moisturizes +... | ceramide NP: deeply moisturizes +... | ✅ | Exact match |
+| Hero Ingredient Call-outs 3 | lipohydroxy acid: gently exfoliates... | lipohydroxy acid: gently exfoliates... | ✅ | Exact match |
+| Hero Ingredient Call-outs 4 | regenerative shea butter: enriches... | regenerative shea butter: enriches... | ✅ | Exact match |
+| Hero Ingredient Call-outs 5 | sea buckthorn: nourishes + seals in... | sea buckthorn: nourishes + seals in... | ✅ | Exact match |
+| Warning | avoid contact with eyes. | avoid contact with eyes. | ✅ | Exact match |
+| PCR Callout (if needed) | this jar is made with 50% post... | this jar is made with 50%... | ⚠️ | [D-012] Near match (98.1%) — verify differences |
+| Address Block | amika Brooklyn, NY 11249 USA | amika Brooklyn, NY 11249 USA | ✅ | [D-014] Exact match; Text is underlined in artwork but... |
+| Biorius Address | BIORIUS / EU: Wavre, BE, UK: London,... | BIORIUS / EU : Wavre, BE / UK :... | ❌ | [D-015] Mismatch (94.0%); Text is underlined in artwork... |
+| Formula Country of Origin | made in USA with global materials | made in USA with global materials | ✅ | [D-016] Exact match; Text is underlined in artwork but... |
+| Ingredient List (Formula #) | (22640) | (22640) | ✅ | Formula number match |
+| Ingredient List | Water/Aqua/Eau, Cocos Nucifera... | (Shea) Butter, Glycerin,... | ❌ | [D-019] Mismatch (88.3%) |
+| Social Handles | loveamika.com/recycle | loveamika.com/recycle | ✅ | [D-019] Exact match; Text is underlined in artwork but... |
 
 **Back Panel — French**
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
-| Marketing + Usage Copy 1 | FR_ plongez au cœur d'une bulle de... | FR_plongez au cœur d'une bulle de... | ⚠️ | [D-007] Near match (99.8%) — verify differences; Text is... |
-| Marketing + Usage Copy 2 | fragrance fruitée et enivrante... | fragrance fruitée et enivrante... | ✅ | [D-009] Exact match; Text is underlined in artwork but... |
-| Marketing + Usage Copy 3 | appliquez le produit sur l'ensemble... | NOT FOUND | ❌ | [D-011] |
-| Warning | exposition au soleil : ce produit... | exposition au soleil : ce produit... | ✅ | [D-013] Exact match; Text is underlined in artwork but... |
-| PCR Callout (if needed) | FR_cette bouteille contient 50% de... | NOT FOUND | ❌ | [D-015] |
-| Formula Country of Origin | fabriqué aux États-Unis avec des... | NOT FOUND | ❌ | [D-019] |
+| Marketing + Usage Copy 1 | Ce beurre corporel nourrissant... | ce beurre corporel nourrissant... | ❌ | [D-005] Mismatch (87.7%) \| Note: copy doc flagged in A |
+| Marketing + Usage Copy 2 | fragrance fruitée et enivrante... | fragrance fruitée et enivrante... | ✅ | Exact match |
+| Marketing + Usage Copy 3 | utilisation : appliquez sur le corps... | utilisation : appliquez sur le corps... | ✅ | Exact match |
+| Pack Claim 1 | l'ami de votre peau | l'ami de votre peau | ✅ | Exact match |
+| Pack Claim 2 | cliniquement prouvé | cliniquement prouvé | ✅ | Exact match |
+| Pack Claim 3 | idéal pour toutes les carnations | NOT FOUND | ❌ | [D-007] |
+| Hero Ingredients Header | ingrédients clés | ingrédients clés | ✅ | Exact match |
+| Hero Ingredient Call-outs 2 | complexe céramides : hydrate... | complexe céramides hydrate... | ⚠️ | [D-008] Near match (98.7%) — verify differences |
+| Hero Ingredient Call-outs 3 | acide lipo-hydroxy (LHA) : exfolie... | acide lipo-hydroxy (LHA) exfolie en... | ⚠️ | [D-009] Near match (98.6%) — verify differences |
+| Hero Ingredient Call-outs 4 | beurre de karité régénérant : ses... | beurre de karité régénérant ses... | ⚠️ | [D-010] Near match (98.9%) — verify differences |
+| Hero Ingredient Call-outs 5 | l'argousier : nourrit + préserve... | l'argousier nourrit + préserve... | ⚠️ | [D-011] Near match (99.3%) — verify differences |
+| Warning | éviter tout contact avec les yeux. | éviter tout contact avec les yeux. | ✅ | Exact match |
+| PCR Callout (if needed) | ce pot contient 50% de matériaux... | ce pot contient 50% de matériaux... | ✅ | [D-013] Exact match |
+| Formula Country of Origin | fabriqué aux États-Unis avec des... | fabriqué aux États-Unis avec des... | ✅ | [D-017] Exact match; Text is underlined in artwork but... |
 
 ### E. Font Size
 
 | Text String / Field | Jurisdiction | Required Min (pt) | Measured Min (pt) | Method | Status | Screenshot ID |
 |---------------------|--------------|-------------------|-------------------|--------|--------|---------------|
-| 12M | USA | 4.5 | 3.47 | Vector | ❌ | FS-001 |
-| 12M | EU | 6.0 | 3.47 | Vector | ❌ | FS-001 |
+| 12M | USA | 4.5 | 3.72 | Vector | ❌ | FS-001 |
+| 12M | EU | 6.0 | 3.72 | Vector | ❌ | FS-001 |
 
 ### F. Barcode
 
@@ -108,28 +126,25 @@
 
 | ID | What | Where | Fix | Linked Rows | Status After Fix |
 |----|------|-------|-----|-------------|------------------|
-| D-001 | exact | Front Panel — English | Exact match | D | TBD |
-| D-002 | exact | Front Panel — English | Exact match | D | TBD |
-| D-003 | exact | Front Panel — French | Exact match | D | TBD |
+| D-001 | Missing text | Front Panel — English | Verify | D | TBD |
+| D-002 | Missing text | Front Panel — English | Verify | D | TBD |
+| D-003 | Missing text | Front Panel — French | Verify | D | TBD |
 | D-004 | exact | Front Panel — English | Exact match | D | TBD |
-| D-005 | exact | Front Panel — English | Exact match | D | TBD |
-| D-006 | Near match | Back Panel — English | Near match (97.7%) —... | D | TBD |
-| D-007 | Near match | Back Panel — French | Near match (99.8%) —... | D | TBD |
-| D-008 | Text mismatch | Back Panel — English | Mismatch (88.9%) | D | TBD |
-| D-009 | exact | Back Panel — French | Exact match | D | TBD |
-| D-010 | exact | Back Panel — English | Exact match | D | TBD |
-| D-011 | Missing text | Back Panel — French | Verify | D | TBD |
-| D-012 | exact | Back Panel — English | Exact match | D | TBD |
+| D-005 | Text mismatch | Back Panel — French | Mismatch (87.7%) \| Note:... | A, D | TBD |
+| D-006 | Missing text | Back Panel — English | Verify | D | TBD |
+| D-007 | Missing text | Back Panel — French | Verify | D | TBD |
+| D-008 | Near match | Back Panel — French | Near match (98.7%) —... | D | TBD |
+| D-009 | Near match | Back Panel — French | Near match (98.6%) —... | D | TBD |
+| D-010 | Near match | Back Panel — French | Near match (98.9%) —... | D | TBD |
+| D-011 | Near match | Back Panel — French | Near match (99.3%) —... | D | TBD |
+| D-012 | Near match | Back Panel — English | Near match (98.1%) —... | D | TBD |
 | D-013 | exact | Back Panel — French | Exact match | D | TBD |
-| D-014 | Missing text | Back Panel — English | Verify | D | TBD |
-| D-015 | Missing text | Back Panel — French | Verify | D | TBD |
-| D-016 | Missing text | Back Panel — English | Verify | D | TBD |
-| D-017 | Missing text | Back Panel — English | Verify | D | TBD |
-| D-018 | Missing text | Back Panel — English | Verify | D | TBD |
-| D-019 | Missing text | Back Panel — French | Verify | D | TBD |
-| D-021 | Missing text | Back Panel — English | Verify | D | TBD |
-| D-021 | Missing text | Back Panel — English | Verify | D | TBD |
-| D-022 | Missing text | Back Panel — English | Verify | D | TBD |
+| D-014 | exact | Back Panel — English | Exact match | D | TBD |
+| D-015 | Text mismatch | Back Panel — English | Mismatch (94.0%) | D | TBD |
+| D-016 | exact | Back Panel — English | Exact match | D | TBD |
+| D-017 | exact | Back Panel — French | Exact match | D | TBD |
+| D-019 | Text mismatch | Back Panel — English | Mismatch (88.3%) | D | TBD |
+| D-019 | exact | Back Panel — English | Exact match | D | TBD |
 
 *1 annotated snapshot(s) generated.*
 - `snapshot_page_1.png`
@@ -138,30 +153,30 @@
 
 | Area | Checks | Matches | Score % | Notes |
 |------|--------|---------|---------|-------|
-| Copy accuracy | 23 | 10 | 43 | — |
-| Claims & risk | 0 | 0 | 100 |  |
-| Regulatory (EU font) | 2 | 0 | 0 | Smallest: 3.47pt |
-| **Overall** | — | — | **47.8** | — |
+| Copy accuracy | 38 | 25 | 66 | — |
+| Claims & risk | 3 | 2 | 67 | 1 high-risk claim(s) pending |
+| Regulatory (EU font) | 2 | 0 | 0 | Smallest: 3.72pt |
+| **Overall** | — | — | **44.2** | — |
 
 **Top Fixes (❌)**
 
 | Item |
 |------|
-| [D-008] Marketing + Usage Copy 2: Mismatch (88.9%) |
-| [D-011] Marketing + Usage Copy 3: missing |
-| [D-014] PCR Callout (if needed): missing |
-| [D-015] PCR Callout (if needed): missing |
-| [D-016] Address Block: missing |
+| [D-001] Product Name: missing |
+| [D-002] Secondary Name: missing |
+| [D-003] Secondary Name: missing |
+| [D-005] Marketing + Usage Copy 1: Mismatch (87.7%) \| Note: copy doc flagged in A |
+| [D-006] Pack Claim 3: missing |
 
 **Attention (⚠️)**
 
 | Item |
 |------|
-| Product Name: Exact match |
-| Secondary Name: Exact match |
-| Secondary Name: Exact match |
-| Scent: Exact match |
-| Marketing + Usage Copy 1: Near match (97.7%) — verify differences |
+| Hero Ingredient Call-outs 2: Near match (98.7%) — verify differences |
+| Hero Ingredient Call-outs 3: Near match (98.6%) — verify differences |
+| Hero Ingredient Call-outs 4: Near match (98.9%) — verify differences |
+| Hero Ingredient Call-outs 5: Near match (99.3%) — verify differences |
+| PCR Callout (if needed): Near match (98.1%) — verify differences |
 
 ## 4️⃣ Optional Fields
 
@@ -177,5 +192,5 @@
 | Constraint | Source | Applies To | Notes |
 |------------|--------|------------|-------|
 | Text must match character-for-character | Brand | All panels | Including punctuation, case, diacritics |
-| 9 fields require visual verification | Zoom Triggers | See flagged items | Numbers, units, or low confidence |
+| 7 fields require visual verification | Zoom Triggers | See flagged items | Numbers, units, or low confidence |
 | 2 instructional notes detected | Copy Document | See Section A | Excluded from artwork matching |

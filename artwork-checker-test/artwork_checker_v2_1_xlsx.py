@@ -471,9 +471,9 @@ class Config:
     # stdout sentinel block that a Custom GPT can detect and then perform visual
     # verification using built-in vision.
     GPT_VISION_EXPORT_ENABLED = True
-    GPT_VISION_PAGE_DPI = 250
-    GPT_VISION_CROP_DPI = 350
-    GPT_VISION_CROP_PADDING_PT = 18  # PDF points
+    GPT_VISION_PAGE_DPI = 400
+    GPT_VISION_CROP_DPI = 400
+    GPT_VISION_CROP_PADDING_PT = 40  # PDF points — wide enough to capture adjacent lines
     GPT_VISION_MAX_TOKENS_FOR_HINT = 6  # token hints to locate NOT FOUND items
 
 
@@ -2296,8 +2296,10 @@ class GPTVisionAssetExporter:
         vision_dir = output_dir / "gpt_vision"
         pages_dir = vision_dir / "pages"
         crops_dir = vision_dir / "crops"
+        strips_dir = vision_dir / "strips"
         pages_dir.mkdir(parents=True, exist_ok=True)
         crops_dir.mkdir(parents=True, exist_ok=True)
+        strips_dir.mkdir(parents=True, exist_ok=True)
 
         doc = fitz.open(str(pdf_path))
         try:
@@ -2310,6 +2312,27 @@ class GPTVisionAssetExporter:
                 out = pages_dir / f"page_{i+1}.png"
                 out.write_bytes(pix.tobytes("png"))
                 page_images[i + 1] = str(out)
+
+            # 1b) Render margin strips per page — captures vertical/rotated regulatory text
+            # Uses page_dpi so files stay manageable; left/right strips target 90°-rotated columns
+            page_strips: Dict[int, List[str]] = {}
+            for i in range(len(doc)):
+                page = doc[i]
+                pg_num = i + 1
+                w = page.rect.width
+                h = page.rect.height
+                strip_mat = fitz.Matrix(self.page_dpi / 72, self.page_dpi / 72)
+                strip_paths: List[str] = []
+                for s_name, s_rect in [
+                    ("left",   fitz.Rect(0,          0,          w * 0.30, h)),
+                    ("right",  fitz.Rect(w * 0.70,   0,          w,        h)),
+                    ("bottom", fitz.Rect(0,           h * 0.70,  w,        h)),
+                ]:
+                    s_out = strips_dir / f"page_{pg_num}_{s_name}.png"
+                    s_pix = page.get_pixmap(matrix=strip_mat, clip=s_rect, alpha=False)
+                    s_out.write_bytes(s_pix.tobytes("png"))
+                    strip_paths.append(str(s_out))
+                page_strips[pg_num] = strip_paths
 
             # 2) Build Tier 1 set
             tier1 = [
@@ -2377,21 +2400,14 @@ class GPTVisionAssetExporter:
                         crops.append(str(out))
                         page_guess = pg
                     else:
-                        # Last resort: quadrant crops of the guessed page
+                        # Last resort: full page + margin strips
+                        # More reliable than quadrants — margin strips capture vertical/rotated
+                        # regulatory text columns that token-hint search fails to locate
                         pg = max(1, min(page_guess, len(doc)))
-                        page = doc[pg - 1]
-                        w = page.rect.width
-                        h = page.rect.height
-                        quads = [
-                            ("Q1", (0, 0, w/2, h/2)),
-                            ("Q2", (w/2, 0, w, h/2)),
-                            ("Q3", (0, h/2, w/2, h)),
-                            ("Q4", (w/2, h/2, w, h)),
-                        ]
-                        for name, qb in quads:
-                            out = crops_dir / f"{issue_id}_{name}.png"
-                            render_crop(pg - 1, qb, out)
-                            crops.append(str(out))
+                        full = page_images.get(pg, "")
+                        if full:
+                            crops.append(full)
+                        crops.extend(page_strips.get(pg, []))
 
                 items.append({
                     "id": issue_id,
@@ -2414,6 +2430,7 @@ class GPTVisionAssetExporter:
                 "artwork_pdf": str(pdf_path),
                 "output_dir": str(vision_dir),
                 "page_images": page_images,
+                "page_strips": page_strips,
                 "items": items
             }
 
