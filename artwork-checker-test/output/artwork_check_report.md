@@ -1,6 +1,6 @@
 # Artwork Verification Report
 
-*Generated: 2026-02-24 15:14:21*
+*Generated: 2026-02-25 17:47:35*
 
 *Checker Version: 2.1.0*
 
@@ -84,17 +84,17 @@
 | Warning | avoid contact with eyes. | avoid contact with eyes. | ✅ | Exact match |
 | PCR Callout (if needed) | this jar is made with 50% post... | this jar is made with 50%... | ⚠️ | [D-012] Near match (98.1%) — verify differences |
 | Address Block | amika Brooklyn, NY 11249 USA | amika Brooklyn, NY 11249 USA | ✅ | [D-014] Exact match; Text is underlined in artwork but... |
-| Biorius Address | BIORIUS / EU: Wavre, BE, UK: London,... | NOT FOUND | ❌ | [D-015] |
+| Biorius Address | BIORIUS / EU: Wavre, BE, UK: London,... | BIORIUS / EU : Wavre, BE / UK :... | ❌ | [D-015] Mismatch (94.0%); Text is underlined in artwork... |
 | Formula Country of Origin | made in USA with global materials | made in USA with global materials | ✅ | [D-016] Exact match; Text is underlined in artwork but... |
 | Ingredient List (Formula #) | (22640) | (22640) | ✅ | Formula number match |
-| Ingredient List | Water/Aqua/Eau, Cocos Nucifera... | NOT FOUND | ❌ | [D-019] |
+| Ingredient List | Water/Aqua/Eau, Cocos Nucifera... | (Shea) Butter, Glycerin,... | ❌ | [D-019] Mismatch (88.3%) |
 | Social Handles | loveamika.com/recycle | loveamika.com/recycle | ✅ | [D-019] Exact match; Text is underlined in artwork but... |
 
 **Back Panel — French**
 
 | Field | Copy Doc Value | Artwork Value | Match | Notes |
 |-------|----------------|---------------|-------|-------|
-| Marketing + Usage Copy 1 | Ce beurre corporel nourrissant... | NOT FOUND | ❌ | [D-005] Note: copy doc also flagged in A |
+| Marketing + Usage Copy 1 | Ce beurre corporel nourrissant... | ce beurre corporel nourrissant... | ❌ | [D-005] Mismatch (87.7%) \| Note: copy doc flagged in A |
 | Marketing + Usage Copy 2 | fragrance fruitée et enivrante... | fragrance fruitée et enivrante... | ✅ | Exact match |
 | Marketing + Usage Copy 3 | utilisation : appliquez sur le corps... | utilisation : appliquez sur le corps... | ✅ | Exact match |
 | Pack Claim 1 | l'ami de votre peau | l'ami de votre peau | ✅ | Exact match |
@@ -130,7 +130,7 @@
 | D-002 | Missing text | Front Panel — English | Verify | D | TBD |
 | D-003 | Missing text | Front Panel — French | Verify | D | TBD |
 | D-004 | exact | Front Panel — English | Exact match | D | TBD |
-| D-005 | Missing text | Back Panel — French | Note: copy doc also... | A, D | TBD |
+| D-005 | Text mismatch | Back Panel — French | Mismatch (87.7%) \| Note:... | A, D | TBD |
 | D-006 | Missing text | Back Panel — English | Verify | D | TBD |
 | D-007 | Missing text | Back Panel — French | Verify | D | TBD |
 | D-008 | Near match | Back Panel — French | Near match (98.7%) —... | D | TBD |
@@ -140,10 +140,10 @@
 | D-012 | Near match | Back Panel — English | Near match (98.1%) —... | D | TBD |
 | D-013 | exact | Back Panel — French | Exact match | D | TBD |
 | D-014 | exact | Back Panel — English | Exact match | D | TBD |
-| D-015 | Missing text | Back Panel — English | Verify | D | TBD |
+| D-015 | Text mismatch | Back Panel — English | Mismatch (94.0%) | D | TBD |
 | D-016 | exact | Back Panel — English | Exact match | D | TBD |
 | D-017 | exact | Back Panel — French | Exact match | D | TBD |
-| D-019 | Missing text | Back Panel — English | Verify | D | TBD |
+| D-019 | Text mismatch | Back Panel — English | Mismatch (88.3%) | D | TBD |
 | D-019 | exact | Back Panel — English | Exact match | D | TBD |
 
 *1 annotated snapshot(s) generated.*
@@ -165,7 +165,7 @@
 | [D-001] Product Name: missing |
 | [D-002] Secondary Name: missing |
 | [D-003] Secondary Name: missing |
-| [D-005] Marketing + Usage Copy 1: Note: copy doc also flagged in A |
+| [D-005] Marketing + Usage Copy 1: Mismatch (87.7%) \| Note: copy doc flagged in A |
 | [D-006] Pack Claim 3: missing |
 
 **Attention (⚠️)**

@@ -5,6 +5,13 @@
   "page_images": {
     "1": "output\\gpt_vision\\pages\\page_1.png"
   },
+  "page_strips": {
+    "1": [
+      "output\\gpt_vision\\strips\\page_1_left.png",
+      "output\\gpt_vision\\strips\\page_1_right.png",
+      "output\\gpt_vision\\strips\\page_1_bottom.png"
+    ]
+  },
   "items": [
     {
       "id": "82308adf60",
@@ -75,10 +82,10 @@
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
       "crops": [
-        "output\\gpt_vision\\crops\\4c46c94010_Q1.png",
-        "output\\gpt_vision\\crops\\4c46c94010_Q2.png",
-        "output\\gpt_vision\\crops\\4c46c94010_Q3.png",
-        "output\\gpt_vision\\crops\\4c46c94010_Q4.png"
+        "output\\gpt_vision\\pages\\page_1.png",
+        "output\\gpt_vision\\strips\\page_1_left.png",
+        "output\\gpt_vision\\strips\\page_1_right.png",
+        "output\\gpt_vision\\strips\\page_1_bottom.png"
       ]
     },
     {
@@ -88,8 +95,8 @@
       "language": "French",
       "field_name": "Marketing + Usage Copy 1",
       "copy_value": "Ce beurre corporel nourrissant étreint votre peau telle une caresse réconfortante, grâce aux céramides hydratants + au beurre de karité qu'il contient. pour une peau douce, souple + repulpée.",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
+      "script_artwork_value": "ce beurre corporel nourrissant étreint votre peau telle une caresse réconfortante, grâce aux céramides hydratants + au beurre de karité qu'il contient.",
+      "script_match_type": "mismatch",
       "status_code": "FAIL",
       "zoom_reasons": [],
       "page_guess": 1,
@@ -266,8 +273,8 @@
       "language": "English",
       "field_name": "Biorius Address",
       "copy_value": "BIORIUS / EU: Wavre, BE, UK: London, WC2H 9JQ, GB",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
+      "script_artwork_value": "BIORIUS / EU : Wavre, BE / UK : London WC2H 9JQ, GB",
+      "script_match_type": "mismatch",
       "status_code": "FAIL",
       "zoom_reasons": [
         "Contains numbers"
@@ -338,8 +345,8 @@
       "language": "English",
       "field_name": "Ingredient List",
       "copy_value": "Water/Aqua/Eau, Cocos Nucifera (Coconut/Nuix de Coco) Oil, Isopropyl Palmitate, Cetearyl Alcohol, Butyrospermum Parkii (Shea) Butter, Glycerin, Caprylic/Capric Triglyceride, Stearic Acid, Theobroma Cacao (Cocoa) Seed Butter, Ceramide Np, Hippophae Rhamnoides (Sea Buckthorn/Agrousier) Fruit/Seed Oil, Capryloyl Salicylic Acid, Jasmine Oil/Extract, Sanguisorba Officinalis Root Extract, Saccharide Isomerate, Panthenol, Dimethicone, Propanediol, Hydroxyapatite, Hydroxyethylcellulose, Ethylhexylglycerin, Phenoxyethanol, Polysorbate 60, Citric Acid, Sodium Citrate, Sodium Hydroxide, Sodium Phosphate, Disodium Phosphate, Carbomer, Chlorphenesin, Tocopherol, Fragrance/Parfum, Benzyl Benzoate, Hydroxycitronellal, Limonene, Citronellal, Coumarin, Geraniol, Tetramethyl Acetyloctahydronaphthalenes, Vanillin, Rose Ketones",
-      "script_artwork_value": "NOT FOUND",
-      "script_match_type": "missing",
+      "script_artwork_value": "(Shea) Butter, Glycerin, Caprylic/Capric Triglyceride, Stearic Acid, Theobroma Cacao (Cocoa) Seed Butter, Ceramide Np, Hippophae Rhamnoides (Sea Buckthorn/Agrousier) Fruit/Seed Oil, Capryloyl Salicylic Acid, Jasmine Oil/Extract, Sanguisorba Officinalis Root Extract, Saccharide Isomerate, Panthenol, Dimethicone, Propanediol, Hydroxyapatite, Hydroxyethylcellulose, Ethylhexylglycerin, Phenoxyethanol, Polysorbate 60, Citric Acid, Sodium Citrate, Sodium Hydroxide, Sodium Phosphate, Disodium Phosphate, Carbomer, Chlorphenesin, Tocopherol, Fragrance/Parfum, Benzyl Benzoate, Hydroxycitronellal, Limonene, Citronellal, Coumarin, Geraniol, Tetramethyl",
+      "script_match_type": "mismatch",
       "status_code": "FAIL",
       "zoom_reasons": [
         "Contains numbers"
