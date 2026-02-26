@@ -2756,13 +2756,15 @@ class VisionExporter:
                 crop_y1 = min(img_h, int(cy + half_h))
 
                 crop = full_img.crop((crop_x0, crop_y0, crop_x1, crop_y1))
-                safe_id = (finding.issue_id or finding.field_name[:16]).replace("/", "_")
+                _fallback_id = f"{finding.field_name}|{finding.panel}|{finding.language}"
+                safe_id = (finding.issue_id or _fallback_id).replace("/", "_").replace("|", "_")
                 crop_path = focus_dir / f"{safe_id}_page_{page_num}.png"
                 crop.save(str(crop_path))
                 focus_crop_path = str(crop_path)
 
+            _fallback_id = f"{finding.field_name}|{finding.panel}|{finding.language}"
             item: Dict[str, Any] = {
-                "id": finding.issue_id or finding.field_name[:16],
+                "id": finding.issue_id or _fallback_id,
                 "panel": finding.panel,
                 "language": finding.language,
                 "field_name": finding.field_name,
@@ -2864,11 +2866,14 @@ class VisionOverrideApplier:
         raw = json.loads(overrides_path.read_text(encoding="utf-8"))
         overrides: List[Dict[str, Any]] = raw.get("overrides", [])
 
-        # Build id → finding index map
+        # Build id → finding index map (by issue_id, with composite fallback for no-issue_id items)
         id_map: Dict[str, int] = {}
         for idx, f in enumerate(findings):
             if f.issue_id:
                 id_map[f.issue_id] = idx
+            else:
+                fallback = f"{f.field_name}|{f.panel}|{f.language}"
+                id_map[fallback] = idx
 
         applied = 0
         for ov in overrides:
@@ -2947,6 +2952,13 @@ class ArtworkChecker:
         logger.info("=" * 60)
         logger.info(f"ARTWORK CHECKER v{config.VERSION}")
         logger.info("=" * 60)
+
+        copy_path = Path(copy_path)
+        artwork_paths = [Path(p) for p in artwork_paths]
+        if output_dir is not None:
+            output_dir = Path(output_dir)
+        if vision_overrides_path is not None:
+            vision_overrides_path = Path(vision_overrides_path)
 
         if not copy_path.exists():
             raise FileNotFoundError(f"Copy document not found: {copy_path}")
