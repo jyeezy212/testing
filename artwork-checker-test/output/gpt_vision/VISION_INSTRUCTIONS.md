@@ -13,8 +13,9 @@ This run produced items requiring visual verification.
 3. Write `output/vision_overrides.json`:
 
 ```json
-{"overrides":[
-  {"finding_id":"<id>","visual_artwork_value":"<text>","found":true,"notes":"Visually verified on page X, [panel], [lang]"}
+{"vision_audit":{"source":"manual_image_read","task_hash":"<task_hash from vision_tasks.json>"},
+"overrides":[
+  {"finding_id":"<id>","visual_artwork_value":"<text>","found":true,"notes":"Visually verified on page X, [panel], [lang]","evidence":"focus_crop|page_image","evidence_path":"<path>"}
 ]}
 ```
 

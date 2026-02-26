@@ -48,6 +48,7 @@ import traceback
 import json
 import os
 import csv
+import hashlib
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Set, Any, Union
 from dataclasses import dataclass, field
@@ -117,6 +118,11 @@ class VisionPassRequired(Exception):
         self.tier1_count = tier1_count
 
 
+class VisionOverrideRejected(Exception):
+    """Raised when vision_overrides.json fails validation (missing audit stamp,
+    wrong task hash, suspicious auto-fill, missing evidence, etc.)."""
+
+
 # =============================================================================
 # ENUMERATIONS
 # =============================================================================
@@ -177,6 +183,11 @@ class Config:
     ZOOM_CONFIDENCE_THRESHOLD = 100
     ZOOM_FUZZY_THRESHOLD = 100
     VISION_ALWAYS_REQUIRED = True
+
+    # VISION OVERRIDE VALIDATION (Pass 2 gate)
+    VISION_OVERRIDE_STRICT = True
+    VISION_OVERRIDE_REQUIRE_AUDIT_STAMP = True
+    VISION_OVERRIDE_REQUIRE_EVIDENCE = True
 
     # ROTATION RECONSTRUCTION
     ROTATION_PROXIMITY_THRESHOLD = 8.0
@@ -2780,11 +2791,29 @@ class VisionExporter:
             items.append(item)
 
         # --- Write vision_tasks.json ---
+        required_ids = [it["id"] for it in items]
+        hash_payload_items = []
+        for it in items:
+            hash_payload_items.append({
+                "id": it.get("id"),
+                "copy_value": it.get("copy_value", ""),
+                "script_artwork_value": it.get("script_artwork_value", ""),
+                "script_match_type": it.get("script_match_type", ""),
+                "status_code": it.get("status_code", ""),
+                "zoom_reasons": it.get("zoom_reasons", []),
+                "page_guess": it.get("page_guess", 1),
+                "focus_crop": bool(it.get("focus_crop")),
+            })
+        hash_payload = json.dumps(hash_payload_items, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        task_hash = hashlib.sha256(hash_payload).hexdigest()
+
         tasks_data: Dict[str, Any] = {
             "enabled": True,
             "artwork_pdf": str(pdf_path),
             "output_dir": str(output_dir),
             "page_images": {str(k): v for k, v in page_image_paths.items()},
+            "required_ids": required_ids,
+            "task_hash": task_hash,
             "items": items,
         }
         tasks_path = vision_dir / "vision_tasks.json"
@@ -2809,9 +2838,11 @@ class VisionExporter:
             "   - Retype the ACTUAL visible artwork text character-by-character.\n"
             "3. Write `output/vision_overrides.json`:\n\n"
             "```json\n"
-            '{"overrides":[\n'
+            '{"vision_audit":{"source":"manual_image_read","task_hash":"<task_hash from vision_tasks.json>"},\n'
+            '"overrides":[\n'
             '  {"finding_id":"<id>","visual_artwork_value":"<text>",'
-            '"found":true,"notes":"Visually verified on page X, [panel], [lang]"}\n'
+            '"found":true,"notes":"Visually verified on page X, [panel], [lang]",'
+            '"evidence":"focus_crop|page_image","evidence_path":"<path>"}\n'
             "]}\n"
             "```\n\n"
             "Sentinel block is printed to stdout between:\n"
@@ -2854,6 +2885,85 @@ class VisionOverrideApplier:
 
     normalizer = TextNormalizer
 
+    def _load_tasks_manifest(self, overrides_path: Path) -> Dict[str, Any]:
+        """Load vision_tasks.json produced in Pass 1 (sibling gpt_vision/ dir)."""
+        tasks_path = overrides_path.parent / "gpt_vision" / "vision_tasks.json"
+        if not tasks_path.exists():
+            raise FileNotFoundError(
+                f"vision_tasks.json not found for validation: {tasks_path}. "
+                "Run Pass 1 first to generate tasks."
+            )
+        return json.loads(tasks_path.read_text(encoding="utf-8"))
+
+    def _validate_overrides(self, tasks: Dict[str, Any], raw_overrides: Dict[str, Any]) -> None:
+        if not config.VISION_OVERRIDE_STRICT:
+            return
+
+        required_ids = set(tasks.get("required_ids", []))
+        task_hash = tasks.get("task_hash", "")
+        overrides = raw_overrides.get("overrides", [])
+
+        # 1) Audit stamp
+        if config.VISION_OVERRIDE_REQUIRE_AUDIT_STAMP:
+            audit = raw_overrides.get("vision_audit")
+            if not isinstance(audit, dict) or audit.get("source") != "manual_image_read":
+                raise VisionOverrideRejected(
+                    "VISION OVERRIDE REJECTED: Missing/invalid vision_audit stamp."
+                )
+            if task_hash and audit.get("task_hash") != task_hash:
+                raise VisionOverrideRejected(
+                    "VISION OVERRIDE REJECTED: task_hash mismatch. "
+                    "Overrides do not match current vision_tasks.json."
+                )
+
+        # 2) IDs: no duplicates, no missing, no extras
+        seen = [ov.get("finding_id", "") for ov in overrides]
+        if len(seen) != len(set(seen)):
+            raise VisionOverrideRejected(
+                "VISION OVERRIDE REJECTED: Duplicate finding_id entries in overrides."
+            )
+        seen_set = set(seen)
+        missing = required_ids - seen_set
+        extra = seen_set - required_ids
+        if missing:
+            raise VisionOverrideRejected(
+                f"VISION OVERRIDE REJECTED: Missing overrides for required IDs: {sorted(missing)[:10]}"
+            )
+        if extra:
+            raise VisionOverrideRejected(
+                f"VISION OVERRIDE REJECTED: Overrides include unknown IDs: {sorted(extra)[:10]}"
+            )
+
+        # 3) Evidence required per item
+        if config.VISION_OVERRIDE_REQUIRE_EVIDENCE:
+            for ov in overrides:
+                fid = ov.get("finding_id", "")
+                found = bool(ov.get("found", False))
+                v = (ov.get("visual_artwork_value") or "").strip()
+                ev = (ov.get("evidence") or "").strip()
+                evp = (ov.get("evidence_path") or "").strip()
+                if found and not v:
+                    raise VisionOverrideRejected(
+                        f"VISION OVERRIDE REJECTED: '{fid}' marked found=true but visual_artwork_value is empty."
+                    )
+                if not (ev or evp):
+                    raise VisionOverrideRejected(
+                        f"VISION OVERRIDE REJECTED: '{fid}' missing evidence/evidence_path."
+                    )
+                # Validate evidence_path actually exists on disk (within output dir)
+                if evp:
+                    evp_path = Path(evp)
+                    if not evp_path.is_absolute():
+                        evp_path = Path(tasks.get("output_dir", ".")) / evp_path
+                    if not evp_path.exists():
+                        raise VisionOverrideRejected(
+                            f"VISION OVERRIDE REJECTED: '{fid}' evidence_path does not exist: {evp}"
+                        )
+
+        # Note: identical-rate check removed — when the script extracts text
+        # correctly and the GPT confirms it visually, values will legitimately
+        # match. The audit stamp + evidence fields are the authoritative gate.
+
     def apply(
         self,
         findings: List[MatchFinding],
@@ -2864,6 +2974,8 @@ class VisionOverrideApplier:
             raise FileNotFoundError(f"vision_overrides.json not found: {overrides_path}")
 
         raw = json.loads(overrides_path.read_text(encoding="utf-8"))
+        tasks = self._load_tasks_manifest(overrides_path)
+        self._validate_overrides(tasks, raw)
         overrides: List[Dict[str, Any]] = raw.get("overrides", [])
 
         # Build id → finding index map (by issue_id, with composite fallback for no-issue_id items)

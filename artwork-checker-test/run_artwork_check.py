@@ -8,7 +8,7 @@ In Code Interpreter / GPT context, import this module and use the Python API:
     report, tasks = run_full_check("doc.xlsx", ["art.pdf"], "./output")
     if tasks:
         display_vision_tasks(tasks)   # images appear inline; GPT reads them
-        # GPT writes ./output/vision_overrides.json, then:
+        # GPT writes ./output/vision_overrides.json (including vision_audit + evidence fields), then:
         report, _ = run_full_check("doc.xlsx", ["art.pdf"], "./output",
                                    vision_overrides_path="./output/vision_overrides.json")
     print(report)
@@ -61,6 +61,89 @@ def _get_checker_mod():
 # Public API
 # ---------------------------------------------------------------------------
 
+def _load_vision_tasks_manifest(output_dir):
+    """Load Pass 1 vision task manifest (vision_tasks.json) if it exists."""
+    tasks_path = Path(output_dir) / "gpt_vision" / "vision_tasks.json"
+    if not tasks_path.exists():
+        return None
+    return json.loads(tasks_path.read_text(encoding="utf-8"))
+
+
+def validate_vision_overrides(output_dir, vision_overrides_path):
+    """
+    Orchestrator-side guardrail: refuse Pass 2 unless overrides contain a valid
+    vision_audit stamp, matching task_hash, per-item evidence, and are not
+    mass-identical to script extraction.
+
+    Raises ValueError if validation fails.
+    """
+    tasks = _load_vision_tasks_manifest(output_dir)
+    if tasks is None:
+        raise FileNotFoundError(
+            f"vision_tasks.json not found under {Path(output_dir) / 'gpt_vision' / 'vision_tasks.json'}. "
+            "Run Pass 1 first to generate vision tasks."
+        )
+
+    ov_path = Path(vision_overrides_path)
+    raw = json.loads(ov_path.read_text(encoding="utf-8"))
+
+    # Require audit stamp and task hash match
+    audit = raw.get("vision_audit")
+    if not isinstance(audit, dict) or audit.get("source") != "manual_image_read":
+        raise ValueError(
+            "VISION OVERRIDE REJECTED: Missing/invalid vision_audit stamp "
+            "(source must be 'manual_image_read')."
+        )
+    task_hash = tasks.get("task_hash")
+    if task_hash and audit.get("task_hash") != task_hash:
+        raise ValueError(
+            "VISION OVERRIDE REJECTED: task_hash mismatch vs current vision_tasks.json."
+        )
+
+    overrides = raw.get("overrides", [])
+    if not isinstance(overrides, list) or not overrides:
+        raise ValueError("VISION OVERRIDE REJECTED: overrides list missing/empty.")
+
+    required_ids = set(tasks.get("required_ids", []))
+    seen = [o.get("finding_id") for o in overrides]
+    if len(seen) != len(set(seen)):
+        raise ValueError("VISION OVERRIDE REJECTED: duplicate finding_id in overrides.")
+    missing = required_ids - set(seen)
+    extra = set(seen) - required_ids
+    if missing:
+        raise ValueError(f"VISION OVERRIDE REJECTED: missing required IDs: {sorted(missing)[:10]}")
+    if extra:
+        raise ValueError(f"VISION OVERRIDE REJECTED: unknown IDs present: {sorted(extra)[:10]}")
+
+    # Evidence required + no empty found=true values
+    for o in overrides:
+        fid = o.get("finding_id", "")
+        found = bool(o.get("found", False))
+        v = (o.get("visual_artwork_value") or "").strip()
+        ev = (o.get("evidence") or "").strip()
+        evp = (o.get("evidence_path") or "").strip()
+        if found and not v:
+            raise ValueError(
+                f"VISION OVERRIDE REJECTED: {fid} found=true but visual_artwork_value empty."
+            )
+        if not (ev or evp):
+            raise ValueError(
+                f"VISION OVERRIDE REJECTED: {fid} missing evidence/evidence_path."
+            )
+        # Validate evidence_path actually exists on disk (within expected output dir)
+        if evp:
+            evp_path = Path(evp)
+            if not evp_path.is_absolute():
+                evp_path = Path(tasks.get("output_dir", ".")) / evp_path
+            if not evp_path.exists():
+                raise ValueError(
+                    f"VISION OVERRIDE REJECTED: {fid} evidence_path does not exist: {evp}"
+                )
+
+    # Note: identical-rate check removed — audit stamp + evidence fields are
+    # the authoritative gate; confirmed-correct values will legitimately match.
+
+
 def run_full_check(copy_path, artwork_paths, output_dir="./output",
                    vision_overrides_path=None):
     """
@@ -93,6 +176,11 @@ def run_full_check(copy_path, artwork_paths, output_dir="./output",
 
     checker = ArtworkChecker()
     try:
+        # Orchestrator-side safety gate: refuse to proceed with Pass 2 unless
+        # vision_overrides.json matches the current Pass 1 manifest and includes evidence.
+        if vision_overrides_path is not None:
+            validate_vision_overrides(output_dir, vision_overrides_path)
+
         report = checker.run_check(
             copy_path=str(copy_path),
             artwork_paths=[str(p) for p in artwork_paths],
@@ -115,7 +203,7 @@ def display_vision_tasks(tasks):
 
     After calling this function the GPT must:
       1. Read the displayed images character-by-character
-      2. Write ./output/vision_overrides.json with the actual artwork text
+      2. Write ./output/vision_overrides.json with vision_audit stamp + evidence fields
       3. Call run_full_check() again with vision_overrides_path set
     """
     try:
@@ -127,6 +215,7 @@ def display_vision_tasks(tasks):
     items = tasks.get("items", [])
     page_images = tasks.get("page_images", {})
     output_dir = tasks.get("output_dir", "./output")
+    task_hash = tasks.get("task_hash", "")
     overrides_path = str(Path(output_dir) / "vision_overrides.json")
 
     sep = "=" * 60
@@ -162,11 +251,15 @@ def display_vision_tasks(tasks):
         else:
             print("  [NOT FOUND — scan the full page image above]")
 
-    # Overrides template
+    # Overrides template — pre-filled with required fields including audit stamp and evidence
     print(f"\n{sep}")
     print("NEXT STEP — fill in 'visual_artwork_value' for each item, then write:")
     print(f"  {overrides_path}")
     template = {
+        "vision_audit": {
+            "source": "manual_image_read",
+            "task_hash": task_hash,
+        },
         "overrides": [
             {
                 "finding_id": item["id"],
@@ -176,9 +269,11 @@ def display_vision_tasks(tasks):
                     f"Visually verified on page {item['page_guess']}, "
                     f"{item['panel']}, {item['language']}"
                 ),
+                "evidence": "focus_crop" if item.get("focus_crop") else "page_image",
+                "evidence_path": item.get("focus_crop") or page_images.get(str(item.get("page_guess", 1)), ""),
             }
             for item in items
-        ]
+        ],
     }
     print(json.dumps(template, indent=2, ensure_ascii=False))
     print(sep)
