@@ -1,15 +1,18 @@
 {
   "enabled": true,
   "artwork_pdf": "test_files\\5__Amika_Body_BodyButter_Carton_AW_090225_VC_22640.pdf",
-  "output_dir": "output\\gpt_vision",
+  "output_dir": "output",
   "page_images": {
     "1": "output\\gpt_vision\\pages\\page_1.png"
   },
-  "page_strips": {
+  "page_tiles": {
     "1": [
-      "output\\gpt_vision\\strips\\page_1_left.png",
-      "output\\gpt_vision\\strips\\page_1_right.png",
-      "output\\gpt_vision\\strips\\page_1_bottom.png"
+      "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+      "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+      "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+      "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+      "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+      "output\\gpt_vision\\tiles\\page_1_tile_6.png"
     ]
   },
   "items": [
@@ -22,11 +25,18 @@
       "script_artwork_value": "NOT FOUND",
       "script_match_type": "missing",
       "status_code": "FAIL",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-001_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
@@ -38,11 +48,18 @@
       "script_artwork_value": "NOT FOUND",
       "script_match_type": "missing",
       "status_code": "FAIL",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-002_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
@@ -54,11 +71,18 @@
       "script_artwork_value": "NOT FOUND",
       "script_match_type": "missing",
       "status_code": "FAIL",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-003_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
@@ -77,38 +101,270 @@
       ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-<<<<<<< HEAD
-        "output\\gpt_vision\\pages\\page_1.png",
-        "output\\gpt_vision\\strips\\page_1_left.png",
-        "output\\gpt_vision\\strips\\page_1_right.png",
-        "output\\gpt_vision\\strips\\page_1_bottom.png"
-=======
-        "output\\gpt_vision\\crops\\D-004_Q1.png",
-        "output\\gpt_vision\\crops\\D-004_Q2.png",
-        "output\\gpt_vision\\crops\\D-004_Q3.png",
-        "output\\gpt_vision\\crops\\D-004_Q4.png"
->>>>>>> parent of 0fb72ec (update)
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
       "id": "D-005",
-      "panel": "Back Panel",
-      "language": "French",
-      "field_name": "Marketing + Usage Copy 1",
-      "copy_value": "Ce beurre corporel nourrissant étreint votre peau telle une caresse réconfortante, grâce aux céramides hydratants + au beurre de karité qu'il contient. pour une peau douce, souple + repulpée.",
-      "script_artwork_value": "ce beurre corporel nourrissant étreint votre peau telle une caresse réconfortante, grâce aux céramides hydratants + au beurre de karité qu'il contient.",
-      "script_match_type": "mismatch",
-      "status_code": "FAIL",
-      "zoom_reasons": [],
+      "panel": "Front Panel",
+      "language": "English",
+      "field_name": "Scent",
+      "copy_value": "amika:aura",
+      "script_artwork_value": "amika:aura",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-005_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
       "id": "D-006",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Marketing + Usage Copy 1",
+      "copy_value": "like a big embrace, this nourishing body butter hugs skin with moisturizing ceramides + shea butter—leaving you soft, smooth + replenished.",
+      "script_artwork_value": "like a big embrace, this nourishing body butter hugs skin with moisturizing ceramides + shea butter—leaving you soft, smooth + replenished.",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-007",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Marketing + Usage Copy 1",
+      "copy_value": "Ce beurre corporel nourrissant étreint votre peau telle une caresse réconfortante, grâce aux céramides hydratants + au beurre de karité qu'il contient. pour une peau douce, souple + repulpée.",
+      "script_artwork_value": "NOT FOUND",
+      "script_match_type": "missing",
+      "status_code": "FAIL",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-008",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Marketing + Usage Copy 2",
+      "copy_value": "scented with juicy, uplifting amika:aura",
+      "script_artwork_value": "scented with juicy, uplifting amika:aura",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-009",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Marketing + Usage Copy 2",
+      "copy_value": "fragrance fruitée et enivrante \"amika:aura\"",
+      "script_artwork_value": "fragrance fruitée et enivrante \"amika:aura\"",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-010",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Marketing + Usage Copy 3",
+      "copy_value": "use it: apply onto body, massaging into skin until absorbed.",
+      "script_artwork_value": "use it: apply onto body, massaging into skin until absorbed.",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-011",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Marketing + Usage Copy 3",
+      "copy_value": "utilisation : appliquez sur le corps et massez jusqu'à absorption du produit.",
+      "script_artwork_value": "utilisation : appliquez sur le corps et massez jusqu'à absorption du produit.",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-012",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Pack Claim 1",
+      "copy_value": "friend to skin",
+      "script_artwork_value": "friend to skin",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-013",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Pack Claim 1",
+      "copy_value": "l'ami de votre peau",
+      "script_artwork_value": "l'ami de votre peau",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-014",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Pack Claim 2",
+      "copy_value": "clinically proven",
+      "script_artwork_value": "clinically proven",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-015",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Pack Claim 2",
+      "copy_value": "cliniquement prouvé",
+      "script_artwork_value": "cliniquement prouvé",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-016",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Pack Claim 3",
@@ -116,15 +372,22 @@
       "script_artwork_value": "NOT FOUND",
       "script_match_type": "missing",
       "status_code": "FAIL",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-006_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-007",
+      "id": "D-017",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Pack Claim 3",
@@ -132,15 +395,91 @@
       "script_artwork_value": "NOT FOUND",
       "script_match_type": "missing",
       "status_code": "FAIL",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-007_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-008",
+      "id": "D-018",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Hero Ingredients Header",
+      "copy_value": "key ingredients",
+      "script_artwork_value": "key ingredients",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-019",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Hero Ingredients Header",
+      "copy_value": "ingrédients clés",
+      "script_artwork_value": "ingrédients clés",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-020",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Hero Ingredient Call-outs 2",
+      "copy_value": "ceramide NP: deeply moisturizes + supports smoother skin",
+      "script_artwork_value": "ceramide NP: deeply moisturizes + supports smoother skin",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-021",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 2",
@@ -148,15 +487,45 @@
       "script_artwork_value": "complexe céramides hydrate intensément + redonne de la souplesse à la peau",
       "script_match_type": "near",
       "status_code": "ATTN",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-008_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-009",
+      "id": "D-022",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Hero Ingredient Call-outs 3",
+      "copy_value": "lipohydroxy acid: gently exfoliates to help smooth skin texture",
+      "script_artwork_value": "lipohydroxy acid: gently exfoliates to help smooth skin texture",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-023",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 3",
@@ -164,15 +533,45 @@
       "script_artwork_value": "acide lipo-hydroxy (LHA) exfolie en douceur pour une peau plus lisse",
       "script_match_type": "near",
       "status_code": "ATTN",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-009_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-010",
+      "id": "D-024",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Hero Ingredient Call-outs 4",
+      "copy_value": "regenerative shea butter: enriches skin with skin-softening moisture",
+      "script_artwork_value": "regenerative shea butter: enriches skin with skin-softening moisture",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-025",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 4",
@@ -180,15 +579,45 @@
       "script_artwork_value": "beurre de karité régénérant ses propriétés nourrissantes laissent votre peau douce et hydratée",
       "script_match_type": "near",
       "status_code": "ATTN",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-010_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-011",
+      "id": "D-026",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Hero Ingredient Call-outs 5",
+      "copy_value": "sea buckthorn: nourishes + seals in hydration with good-for-skin vitamins, lipids + antioxidants",
+      "script_artwork_value": "sea buckthorn: nourishes + seals in hydration with good-for-skin vitamins, lipids + antioxidants",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-027",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Hero Ingredient Call-outs 5",
@@ -196,15 +625,68 @@
       "script_artwork_value": "l'argousier nourrit + préserve l'hydratation de la peau grâce aux vitamines, aux lipides et aux antioxydants bénéfiques qu'il contient",
       "script_match_type": "near",
       "status_code": "ATTN",
-      "zoom_reasons": [],
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-011_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-012",
+      "id": "D-028",
+      "panel": "Back Panel",
+      "language": "English",
+      "field_name": "Warning",
+      "copy_value": "avoid contact with eyes.",
+      "script_artwork_value": "avoid contact with eyes.",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-029",
+      "panel": "Back Panel",
+      "language": "French",
+      "field_name": "Warning",
+      "copy_value": "éviter tout contact avec les yeux.",
+      "script_artwork_value": "éviter tout contact avec les yeux.",
+      "script_match_type": "exact",
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
+      "page_guess": 1,
+      "page_image": "output\\gpt_vision\\pages\\page_1.png",
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
+      ]
+    },
+    {
+      "id": "D-030",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "PCR Callout (if needed)",
@@ -218,12 +700,17 @@
       ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-012_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-013",
+      "id": "D-031",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "PCR Callout (if needed)",
@@ -237,12 +724,17 @@
       ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-013_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-014",
+      "id": "D-032",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Address Block",
@@ -255,62 +747,86 @@
       ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-014_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-015",
+      "id": "D-033",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Biorius Address",
       "copy_value": "BIORIUS / EU: Wavre, BE, UK: London, WC2H 9JQ, GB",
-      "script_artwork_value": "BIORIUS / EU : Wavre, BE / UK : London WC2H 9JQ, GB",
-      "script_match_type": "mismatch",
+      "script_artwork_value": "NOT FOUND",
+      "script_match_type": "missing",
       "status_code": "FAIL",
       "zoom_reasons": [
         "Contains numbers"
       ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-015_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-016",
+      "id": "D-034",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Formula Country of Origin",
       "copy_value": "made in USA with global materials",
       "script_artwork_value": "made in USA with global materials",
       "script_match_type": "exact",
-      "status_code": "ATTN",
-      "zoom_reasons": [],
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-016_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-017",
+      "id": "D-035",
       "panel": "Back Panel",
       "language": "French",
       "field_name": "Formula Country of Origin",
       "copy_value": "fabriqué aux États-Unis avec des matériaux internationaux",
       "script_artwork_value": "fabriqué aux États-Unis avec des matériaux internationaux",
       "script_match_type": "exact",
-      "status_code": "ATTN",
-      "zoom_reasons": [],
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-017_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "TIER1-018",
+      "id": "Ingredient List ",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Ingredient List (Formula #)",
@@ -323,42 +839,59 @@
       ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\TIER1-018_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-019",
+      "id": "D-037",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Ingredient List",
       "copy_value": "Water/Aqua/Eau, Cocos Nucifera (Coconut/Nuix de Coco) Oil, Isopropyl Palmitate, Cetearyl Alcohol, Butyrospermum Parkii (Shea) Butter, Glycerin, Caprylic/Capric Triglyceride, Stearic Acid, Theobroma Cacao (Cocoa) Seed Butter, Ceramide Np, Hippophae Rhamnoides (Sea Buckthorn/Agrousier) Fruit/Seed Oil, Capryloyl Salicylic Acid, Jasmine Oil/Extract, Sanguisorba Officinalis Root Extract, Saccharide Isomerate, Panthenol, Dimethicone, Propanediol, Hydroxyapatite, Hydroxyethylcellulose, Ethylhexylglycerin, Phenoxyethanol, Polysorbate 60, Citric Acid, Sodium Citrate, Sodium Hydroxide, Sodium Phosphate, Disodium Phosphate, Carbomer, Chlorphenesin, Tocopherol, Fragrance/Parfum, Benzyl Benzoate, Hydroxycitronellal, Limonene, Citronellal, Coumarin, Geraniol, Tetramethyl Acetyloctahydronaphthalenes, Vanillin, Rose Ketones",
-      "script_artwork_value": "(Shea) Butter, Glycerin, Caprylic/Capric Triglyceride, Stearic Acid, Theobroma Cacao (Cocoa) Seed Butter, Ceramide Np, Hippophae Rhamnoides (Sea Buckthorn/Agrousier) Fruit/Seed Oil, Capryloyl Salicylic Acid, Jasmine Oil/Extract, Sanguisorba Officinalis Root Extract, Saccharide Isomerate, Panthenol, Dimethicone, Propanediol, Hydroxyapatite, Hydroxyethylcellulose, Ethylhexylglycerin, Phenoxyethanol, Polysorbate 60, Citric Acid, Sodium Citrate, Sodium Hydroxide, Sodium Phosphate, Disodium Phosphate, Carbomer, Chlorphenesin, Tocopherol, Fragrance/Parfum, Benzyl Benzoate, Hydroxycitronellal, Limonene, Citronellal, Coumarin, Geraniol, Tetramethyl",
-      "script_match_type": "mismatch",
+      "script_artwork_value": "NOT FOUND",
+      "script_match_type": "missing",
       "status_code": "FAIL",
       "zoom_reasons": [
         "Contains numbers"
       ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-019_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     },
     {
-      "id": "D-019",
+      "id": "D-037",
       "panel": "Back Panel",
       "language": "English",
       "field_name": "Social Handles",
       "copy_value": "loveamika.com/recycle",
       "script_artwork_value": "loveamika.com/recycle",
       "script_match_type": "exact",
-      "status_code": "ATTN",
-      "zoom_reasons": [],
+      "status_code": "TBD",
+      "zoom_reasons": [
+        "AI vision double-check always required"
+      ],
       "page_guess": 1,
       "page_image": "output\\gpt_vision\\pages\\page_1.png",
-      "crops": [
-        "output\\gpt_vision\\crops\\D-019_hint.png"
+      "tiles": [
+        "output\\gpt_vision\\tiles\\page_1_tile_1.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_2.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_3.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_4.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_5.png",
+        "output\\gpt_vision\\tiles\\page_1_tile_6.png"
       ]
     }
   ]

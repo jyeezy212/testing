@@ -95,6 +95,28 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
 
 logger = setup_logging()
 
+
+# =============================================================================
+# CUSTOM EXCEPTIONS
+# =============================================================================
+
+class VisionPassRequired(Exception):
+    """
+    Raised by run_check() when Pass 1 completes and visual verification is
+    needed before the final report can be generated.
+
+    Attributes
+    ----------
+    tasks_path   : str  – path to vision_tasks.json
+    tier1_count  : int  – number of items requiring visual review
+    """
+
+    def __init__(self, tasks_path: str, tier1_count: int, message: str):
+        super().__init__(message)
+        self.tasks_path = tasks_path
+        self.tier1_count = tier1_count
+
+
 # =============================================================================
 # ENUMERATIONS
 # =============================================================================
@@ -2633,6 +2655,258 @@ class MarkdownRenderer:
 
 
 # =============================================================================
+# VISION EXPORTER (Pass 1 — --require-vision)
+# =============================================================================
+
+class VisionExporter:
+    """
+    Renders the full artwork page as a high-DPI image, slices it into a
+    regular tile grid, then builds vision_tasks.json for the GPT visual pass.
+
+    Tiles are used instead of arbitrary crops so that no text is cut at a
+    crop boundary.  For "NOT FOUND" items all tiles are provided so GPT can
+    scan the entire page.
+    """
+
+    TILE_COLS = 2
+    TILE_ROWS = 3
+    PAGE_DPI = 200
+
+    def export(
+        self,
+        pdf_path: Path,
+        match_findings: List[MatchFinding],
+        output_dir: Path,
+    ) -> Path:
+        """Render tiles, write vision_tasks.json; returns its path."""
+        if not PIL_AVAILABLE or not PYMUPDF_AVAILABLE:
+            raise RuntimeError("PIL and PyMuPDF must be installed for vision export")
+
+        vision_dir = output_dir / "gpt_vision"
+        pages_dir = vision_dir / "pages"
+        tiles_dir = vision_dir / "tiles"
+        for d in (vision_dir, pages_dir, tiles_dir):
+            d.mkdir(parents=True, exist_ok=True)
+
+        doc = fitz.open(str(pdf_path))
+        page_image_paths: Dict[int, str] = {}
+        page_tile_paths: Dict[int, List[str]] = {}
+
+        for page_idx in range(len(doc)):
+            page = doc[page_idx]
+            page_num = page_idx + 1
+
+            # --- Full-page render ---
+            mat = fitz.Matrix(self.PAGE_DPI / 72, self.PAGE_DPI / 72)
+            pix = page.get_pixmap(matrix=mat)
+            full_img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            page_img_path = pages_dir / f"page_{page_num}.png"
+            full_img.save(str(page_img_path))
+            page_image_paths[page_num] = str(page_img_path)
+            logger.info(f"Rendered full page {page_num}: {page_img_path}")
+
+            # --- Tile grid (TILE_COLS × TILE_ROWS) ---
+            w, h = full_img.size
+            tile_w = w // self.TILE_COLS
+            tile_h = h // self.TILE_ROWS
+            tile_paths: List[str] = []
+            tile_idx = 1
+            for row in range(self.TILE_ROWS):
+                for col in range(self.TILE_COLS):
+                    x0 = col * tile_w
+                    y0 = row * tile_h
+                    x1 = x0 + tile_w if col < self.TILE_COLS - 1 else w
+                    y1 = y0 + tile_h if row < self.TILE_ROWS - 1 else h
+                    tile = full_img.crop((x0, y0, x1, y1))
+                    tile_path = tiles_dir / f"page_{page_num}_tile_{tile_idx}.png"
+                    tile.save(str(tile_path))
+                    tile_paths.append(str(tile_path))
+                    tile_idx += 1
+            page_tile_paths[page_num] = tile_paths
+
+        doc.close()
+
+        # --- Build vision items ---
+        # Include every finding that is non-OK or requires zoom
+        items = []
+        for finding in match_findings:
+            needs_vision = (
+                finding.requires_zoom
+                or finding.status_code in (StatusCode.FAIL, StatusCode.ATTN, StatusCode.TBD)
+            )
+            if not needs_vision:
+                continue
+
+            page_num = 1
+            if finding.matched_runs:
+                for run in finding.matched_runs:
+                    if run.page_number:
+                        page_num = run.page_number
+                        break
+
+            all_tiles = page_tile_paths.get(page_num, [])
+
+            # NOT FOUND → GPT must scan the whole page; provide all tiles
+            # All other items also get all tiles to avoid any text being cut
+            tiles_for_item = all_tiles
+
+            item: Dict[str, Any] = {
+                "id": finding.issue_id or finding.field_name[:16],
+                "panel": finding.panel,
+                "language": finding.language,
+                "field_name": finding.field_name,
+                "copy_value": finding.copy_value,
+                "script_artwork_value": finding.artwork_value or "NOT FOUND",
+                "script_match_type": finding.match_type.value,
+                "status_code": finding.status_code.value,
+                "zoom_reasons": finding.zoom_reasons,
+                "page_guess": page_num,
+                "page_image": page_image_paths.get(page_num, ""),
+                "tiles": tiles_for_item,
+            }
+            items.append(item)
+
+        # --- Write vision_tasks.json ---
+        tasks_data: Dict[str, Any] = {
+            "enabled": True,
+            "artwork_pdf": str(pdf_path),
+            "output_dir": str(output_dir),
+            "page_images": {str(k): v for k, v in page_image_paths.items()},
+            "page_tiles": {str(k): v for k, v in page_tile_paths.items()},
+            "items": items,
+        }
+        tasks_path = vision_dir / "vision_tasks.json"
+        tasks_path.write_text(json.dumps(tasks_data, indent=2, ensure_ascii=False), encoding="utf-8")
+        logger.info(f"Vision tasks written: {tasks_path} ({len(items)} items)")
+
+        # --- Write VISION_INSTRUCTIONS.md ---
+        instructions = (
+            "# GPT Vision Verification Required\n\n"
+            "This run produced items requiring visual verification.\n\n"
+            "## Workflow\n\n"
+            "1. Open `vision_tasks.json`\n"
+            "2. For each item:\n"
+            "   - Open `page_image` first — this is the full artwork render. "
+            "Use it to orient yourself.\n"
+            "   - Then open each `tile` listed for that item to read fine-detail "
+            "text without distortion.\n"
+            "   - `NOT FOUND` items have ALL tiles listed — the text may appear "
+            "anywhere on the page. Search all tiles.\n"
+            "   - Retype the ACTUAL visible artwork text character-by-character.\n"
+            "3. Write `output/vision_overrides.json`:\n\n"
+            "```json\n"
+            '{"overrides":[\n'
+            '  {"finding_id":"<id>","visual_artwork_value":"<text>",'
+            '"found":true,"notes":"Visually verified on page X, [panel], [lang]"}\n'
+            "]}\n"
+            "```\n\n"
+            "Sentinel block is printed to stdout between:\n"
+            "`<<<GPT_VISION_REQUIRED>>>` and `<<<END_GPT_VISION_REQUIRED>>>`\n"
+        )
+        (vision_dir / "VISION_INSTRUCTIONS.md").write_text(instructions, encoding="utf-8")
+
+        return tasks_path
+
+    @staticmethod
+    def print_sentinel(tasks_path: Path, item_count: int) -> None:
+        """Print the GPT_VISION_REQUIRED sentinel block to stdout."""
+        print("<<<GPT_VISION_REQUIRED>>>")
+        print(json.dumps({
+            "vision_tasks": str(tasks_path),
+            "item_count": item_count,
+            "instructions": (
+                "1) Open vision_tasks.json. "
+                "2) For each item open page_image (whole artwork) then each tile. "
+                "3) Retype actual artwork text. "
+                "4) Write output/vision_overrides.json. "
+                "5) Re-run with --vision-overrides ./output/vision_overrides.json"
+            ),
+        }, indent=2))
+        print("<<<END_GPT_VISION_REQUIRED>>>")
+
+
+# =============================================================================
+# VISION OVERRIDE APPLIER (Pass 2 — --vision-overrides)
+# =============================================================================
+
+class VisionOverrideApplier:
+    """
+    Reads vision_overrides.json produced by the GPT visual pass and patches
+    match_findings in-place before the final report is rendered.
+    """
+
+    normalizer = TextNormalizer
+
+    def apply(
+        self,
+        findings: List[MatchFinding],
+        overrides_path: Path,
+    ) -> None:
+        """Mutates findings in-place based on vision overrides."""
+        if not overrides_path.exists():
+            raise FileNotFoundError(f"vision_overrides.json not found: {overrides_path}")
+
+        raw = json.loads(overrides_path.read_text(encoding="utf-8"))
+        overrides: List[Dict[str, Any]] = raw.get("overrides", [])
+
+        # Build id → finding index map
+        id_map: Dict[str, int] = {}
+        for idx, f in enumerate(findings):
+            if f.issue_id:
+                id_map[f.issue_id] = idx
+
+        applied = 0
+        for ov in overrides:
+            fid = ov.get("finding_id", "")
+            if fid not in id_map:
+                logger.warning(f"Vision override finding_id '{fid}' not found in findings")
+                continue
+
+            finding = findings[id_map[fid]]
+            found: bool = ov.get("found", False)
+            visual_value: str = ov.get("visual_artwork_value", "")
+            notes_override: str = ov.get("notes", f"Visually verified")
+
+            if not found or not visual_value:
+                # Still missing after visual check
+                finding.notes = [notes_override] if notes_override else finding.notes
+                finding.status_code = StatusCode.FAIL
+                finding.requires_zoom = False
+                applied += 1
+                continue
+
+            # Update artwork value
+            finding.artwork_value = visual_value
+            finding.requires_zoom = False
+
+            # Recalculate match quality
+            norm_copy = self.normalizer.normalize(finding.copy_value)
+            norm_art = self.normalizer.normalize(visual_value)
+
+            if norm_copy == norm_art:
+                finding.match_type = MatchType.EXACT_MATCH
+                finding.similarity_score = 100.0
+                finding.status_code = StatusCode.OK if not finding.has_3a_flag else StatusCode.ATTN
+            else:
+                score = SequenceMatcher(None, norm_copy, norm_art).ratio() * 100
+                finding.similarity_score = score
+                if score >= Config.EXACT_MATCH_THRESHOLD:
+                    finding.match_type = MatchType.EXACT_MATCH
+                    finding.status_code = StatusCode.OK if not finding.has_3a_flag else StatusCode.ATTN
+                elif score >= Config.NEAR_MATCH_THRESHOLD:
+                    finding.match_type = MatchType.NEAR_MATCH
+                    finding.status_code = StatusCode.ATTN
+                else:
+                    finding.match_type = MatchType.MISMATCH
+                    finding.status_code = StatusCode.FAIL
+
+            finding.notes = [notes_override]
+            applied += 1
+
+        logger.info(f"Applied {applied}/{len(overrides)} vision overrides")
+
+
+# =============================================================================
 # MAIN ORCHESTRATOR
 # =============================================================================
 
@@ -2645,12 +2919,15 @@ class ArtworkChecker:
         self.ai_extractor = AIExtractor()
         self.font_extractor = FontExtractor()
         self.matcher = ArtworkMatcher()
+        self.vision_exporter = VisionExporter()
+        self.vision_applier = VisionOverrideApplier()
 
     def run_check(
         self,
         copy_path: Path,
         artwork_paths: List[Path],
         output_dir: Optional[Path] = None,
+        vision_overrides_path: Optional[Path] = None,
     ) -> str:
         logger.info("=" * 60)
         logger.info(f"ARTWORK CHECKER v{config.VERSION}")
@@ -2730,6 +3007,44 @@ class ArtworkChecker:
             copy_doc.fields, artwork_extraction.text_runs,
             artwork_extraction.extraction_method, copy_quality_issues
         )
+
+        # ── AUTO PASS 1: Always export vision tasks unless overrides provided ────
+        if vision_overrides_path is None:
+            logger.info("\n[VISION PASS 1] Exporting full-page image + tile grid...")
+            if artwork_path_used and artwork_path_used.suffix.lower() == '.pdf':
+                tasks_path = self.vision_exporter.export(
+                    artwork_path_used, match_findings, output_dir
+                )
+                tier1_count = sum(
+                    1 for f in match_findings
+                    if f.requires_zoom or f.status_code in (
+                        StatusCode.FAIL, StatusCode.ATTN, StatusCode.TBD
+                    )
+                )
+                VisionExporter.print_sentinel(tasks_path, tier1_count)
+                msg = (
+                    f"Tier 1 items exist ({tier1_count} items). "
+                    "Visual verification required. "
+                    "Perform GPT visual pass, write output/vision_overrides.json, "
+                    "then re-run with --vision-overrides ./output/vision_overrides.json"
+                )
+                logger.info(msg)
+                print(msg)
+                raise VisionPassRequired(
+                    tasks_path=str(tasks_path),
+                    tier1_count=tier1_count,
+                    message=msg,
+                )
+            else:
+                logger.warning(
+                    "Vision export skipped: artwork is not a PDF. "
+                    "Proceeding without visual verification."
+                )
+
+        # ── PASS 2: Apply vision overrides ───────────────────────────────────
+        if vision_overrides_path is not None:
+            logger.info(f"\n[VISION PASS 2] Applying overrides from {vision_overrides_path}...")
+            self.vision_applier.apply(match_findings, vision_overrides_path)
 
         # STEP 6: Font & Barcode (3E, 3F)
         logger.info("\n[6/7] Extracting font and barcode data...")
@@ -2812,6 +3127,14 @@ Examples:
         help='Disable snapshot generation'
     )
     parser.add_argument(
+        '--vision-overrides', type=Path, default=None,
+        metavar='PATH',
+        help=(
+            'Pass 2: path to vision_overrides.json produced by GPT visual pass. '
+            'Omit to run Pass 1 (tile export + sentinel) automatically.'
+        )
+    )
+    parser.add_argument(
         '--version', action='version',
         version=f'Artwork Checker v{config.VERSION}'
     )
@@ -2833,11 +3156,17 @@ def main():
             copy_path=args.copy,
             artwork_paths=args.artwork,
             output_dir=args.output,
+            vision_overrides_path=args.vision_overrides,
         )
         print("\n" + "=" * 60)
         print("MARKDOWN REPORT")
         print("=" * 60 + "\n")
         print(report)
+        sys.exit(0)
+
+    except VisionPassRequired:
+        # Pass 1 complete — sentinel already printed; exit cleanly for the
+        # GPT to perform the visual pass and re-run with --vision-overrides
         sys.exit(0)
 
     except FileNotFoundError as e:
