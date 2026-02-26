@@ -6,9 +6,9 @@ This run produced items requiring visual verification.
 
 1. Open `vision_tasks.json`
 2. For each item:
-   - Open `page_image` first — this is the full artwork render. Use it to orient yourself.
-   - Then open each `tile` listed for that item to read fine-detail text without distortion.
-   - `NOT FOUND` items have ALL tiles listed — the text may appear anywhere on the page. Search all tiles.
+   - Open `page_image` first — this is the full artwork rendered at 300 DPI. Read it holistically, just like a human reads a physical label: scan the whole artwork to orient yourself.
+   - If `focus_crop` is provided (non-null), open it next — this is a zoomed-in crop centered on the matched text region. Use it to read fine-detail text character-by-character.
+   - `NOT FOUND` items have no `focus_crop` — search the entire `page_image` carefully.
    - Retype the ACTUAL visible artwork text character-by-character.
 3. Write `output/vision_overrides.json`:
 
