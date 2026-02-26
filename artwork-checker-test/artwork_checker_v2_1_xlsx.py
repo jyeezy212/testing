@@ -2662,17 +2662,18 @@ class MarkdownRenderer:
 
 class VisionExporter:
     """
-    Renders the full artwork page as a high-DPI image, slices it into a
-    regular tile grid, then builds vision_tasks.json for the GPT visual pass.
+    Renders the full artwork page at high DPI and, for items with known
+    bounding boxes, generates a targeted focus crop centered on the matched
+    text region.  The AI sees the whole artwork first (orientation), then
+    reads the focus crop for precise character-level verification.
 
-    Tiles are used instead of arbitrary crops so that no text is cut at a
-    crop boundary.  For "NOT FOUND" items all tiles are provided so GPT can
-    scan the entire page.
+    NOT FOUND items have no focus crop — the AI must scan the full page image.
     """
 
-    TILE_COLS = 2
-    TILE_ROWS = 3
-    PAGE_DPI = 200
+    PAGE_DPI = 300        # Full-page render resolution
+    FOCUS_PAD = 100       # Pixels of padding around matched bbox in the crop
+    FOCUS_MIN_W = 500     # Minimum focus crop width (pixels)
+    FOCUS_MIN_H = 250     # Minimum focus crop height (pixels)
 
     def export(
         self,
@@ -2680,56 +2681,37 @@ class VisionExporter:
         match_findings: List[MatchFinding],
         output_dir: Path,
     ) -> Path:
-        """Render tiles, write vision_tasks.json; returns its path."""
+        """Render full-page images and per-item focus crops; returns vision_tasks.json path."""
         if not PIL_AVAILABLE or not PYMUPDF_AVAILABLE:
             raise RuntimeError("PIL and PyMuPDF must be installed for vision export")
 
         vision_dir = output_dir / "gpt_vision"
         pages_dir = vision_dir / "pages"
-        tiles_dir = vision_dir / "tiles"
-        for d in (vision_dir, pages_dir, tiles_dir):
+        focus_dir = vision_dir / "focus"
+        for d in (vision_dir, pages_dir, focus_dir):
             d.mkdir(parents=True, exist_ok=True)
 
         doc = fitz.open(str(pdf_path))
+        page_images: Dict[int, Image.Image] = {}   # PIL images kept in memory for cropping
         page_image_paths: Dict[int, str] = {}
-        page_tile_paths: Dict[int, List[str]] = {}
 
         for page_idx in range(len(doc)):
             page = doc[page_idx]
             page_num = page_idx + 1
 
-            # --- Full-page render ---
             mat = fitz.Matrix(self.PAGE_DPI / 72, self.PAGE_DPI / 72)
             pix = page.get_pixmap(matrix=mat)
             full_img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             page_img_path = pages_dir / f"page_{page_num}.png"
             full_img.save(str(page_img_path))
+            page_images[page_num] = full_img
             page_image_paths[page_num] = str(page_img_path)
-            logger.info(f"Rendered full page {page_num}: {page_img_path}")
-
-            # --- Tile grid (TILE_COLS × TILE_ROWS) ---
-            w, h = full_img.size
-            tile_w = w // self.TILE_COLS
-            tile_h = h // self.TILE_ROWS
-            tile_paths: List[str] = []
-            tile_idx = 1
-            for row in range(self.TILE_ROWS):
-                for col in range(self.TILE_COLS):
-                    x0 = col * tile_w
-                    y0 = row * tile_h
-                    x1 = x0 + tile_w if col < self.TILE_COLS - 1 else w
-                    y1 = y0 + tile_h if row < self.TILE_ROWS - 1 else h
-                    tile = full_img.crop((x0, y0, x1, y1))
-                    tile_path = tiles_dir / f"page_{page_num}_tile_{tile_idx}.png"
-                    tile.save(str(tile_path))
-                    tile_paths.append(str(tile_path))
-                    tile_idx += 1
-            page_tile_paths[page_num] = tile_paths
+            logger.info(f"Rendered full page {page_num} at {self.PAGE_DPI} DPI: {page_img_path}")
 
         doc.close()
 
-        # --- Build vision items ---
-        # Include every finding that is non-OK or requires zoom
+        # --- Build vision items with optional focus crops ---
+        scale = self.PAGE_DPI / 72  # PDF points → pixels
         items = []
         for finding in match_findings:
             needs_vision = (
@@ -2746,11 +2728,38 @@ class VisionExporter:
                         page_num = run.page_number
                         break
 
-            all_tiles = page_tile_paths.get(page_num, [])
+            # --- Focus crop: union bbox of all matched runs on this page ---
+            focus_crop_path: Optional[str] = None
+            run_bboxes = [
+                r.bbox for r in finding.matched_runs
+                if r.bbox and r.page_number == page_num
+            ]
+            if run_bboxes and page_num in page_images:
+                full_img = page_images[page_num]
+                img_w, img_h = full_img.size
 
-            # NOT FOUND → GPT must scan the whole page; provide all tiles
-            # All other items also get all tiles to avoid any text being cut
-            tiles_for_item = all_tiles
+                # Union of all matched-run bboxes (PDF coords → pixels)
+                ux0 = min(b[0] for b in run_bboxes) * scale
+                uy0 = min(b[1] for b in run_bboxes) * scale
+                ux1 = max(b[2] for b in run_bboxes) * scale
+                uy1 = max(b[3] for b in run_bboxes) * scale
+
+                # Expand to minimum size, centered on the text
+                cx = (ux0 + ux1) / 2
+                cy = (uy0 + uy1) / 2
+                half_w = max((ux1 - ux0) / 2 + self.FOCUS_PAD, self.FOCUS_MIN_W / 2)
+                half_h = max((uy1 - uy0) / 2 + self.FOCUS_PAD, self.FOCUS_MIN_H / 2)
+
+                crop_x0 = max(0, int(cx - half_w))
+                crop_y0 = max(0, int(cy - half_h))
+                crop_x1 = min(img_w, int(cx + half_w))
+                crop_y1 = min(img_h, int(cy + half_h))
+
+                crop = full_img.crop((crop_x0, crop_y0, crop_x1, crop_y1))
+                safe_id = (finding.issue_id or finding.field_name[:16]).replace("/", "_")
+                crop_path = focus_dir / f"{safe_id}_page_{page_num}.png"
+                crop.save(str(crop_path))
+                focus_crop_path = str(crop_path)
 
             item: Dict[str, Any] = {
                 "id": finding.issue_id or finding.field_name[:16],
@@ -2764,7 +2773,7 @@ class VisionExporter:
                 "zoom_reasons": finding.zoom_reasons,
                 "page_guess": page_num,
                 "page_image": page_image_paths.get(page_num, ""),
-                "tiles": tiles_for_item,
+                "focus_crop": focus_crop_path,
             }
             items.append(item)
 
@@ -2774,7 +2783,6 @@ class VisionExporter:
             "artwork_pdf": str(pdf_path),
             "output_dir": str(output_dir),
             "page_images": {str(k): v for k, v in page_image_paths.items()},
-            "page_tiles": {str(k): v for k, v in page_tile_paths.items()},
             "items": items,
         }
         tasks_path = vision_dir / "vision_tasks.json"
@@ -2788,12 +2796,14 @@ class VisionExporter:
             "## Workflow\n\n"
             "1. Open `vision_tasks.json`\n"
             "2. For each item:\n"
-            "   - Open `page_image` first — this is the full artwork render. "
-            "Use it to orient yourself.\n"
-            "   - Then open each `tile` listed for that item to read fine-detail "
-            "text without distortion.\n"
-            "   - `NOT FOUND` items have ALL tiles listed — the text may appear "
-            "anywhere on the page. Search all tiles.\n"
+            "   - Open `page_image` first — this is the full artwork rendered at "
+            "300 DPI. Read it holistically, just like a human reads a physical "
+            "label: scan the whole artwork to orient yourself.\n"
+            "   - If `focus_crop` is provided (non-null), open it next — this is a "
+            "zoomed-in crop centered on the matched text region. Use it to read "
+            "fine-detail text character-by-character.\n"
+            "   - `NOT FOUND` items have no `focus_crop` — search the entire "
+            "`page_image` carefully.\n"
             "   - Retype the ACTUAL visible artwork text character-by-character.\n"
             "3. Write `output/vision_overrides.json`:\n\n"
             "```json\n"
@@ -2818,8 +2828,11 @@ class VisionExporter:
             "item_count": item_count,
             "instructions": (
                 "1) Open vision_tasks.json. "
-                "2) For each item open page_image (whole artwork) then each tile. "
-                "3) Retype actual artwork text. "
+                "2) For each item: open page_image (full 300-DPI artwork) to read "
+                "the whole label holistically, then open focus_crop (zoomed crop) "
+                "if provided for character-level detail. NOT FOUND items have no "
+                "focus_crop — scan the full page_image. "
+                "3) Retype actual visible artwork text character-by-character. "
                 "4) Write output/vision_overrides.json. "
                 "5) Re-run with --vision-overrides ./output/vision_overrides.json"
             ),
