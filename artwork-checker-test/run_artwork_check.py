@@ -253,7 +253,7 @@ def display_vision_tasks(tasks):
 
     # Overrides template — pre-filled with required fields including audit stamp and evidence
     print(f"\n{sep}")
-    print("NEXT STEP — fill in 'visual_artwork_value' for each item, then write:")
+    print("NEXT STEP — read each image above; fill 'visual_artwork_value' from what you see — DO NOT copy script_artwork_value — then write:")
     print(f"  {overrides_path}")
     template = {
         "vision_audit": {

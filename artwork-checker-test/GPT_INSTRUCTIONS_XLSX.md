@@ -55,41 +55,38 @@ Script error → STOP immediately. Display the complete `=== SCRIPT ERROR ===` b
 
 ### 4. VISUAL VERIFICATION — ATOMIC HARD GATE
 
-**THIS IS NOT MULTI-TURN. The entire workflow runs in ONE Python execution — no stopping, no waiting.**
+**THIS IS NOT MULTI-TURN. Runs as one response — Pass 1, vision read, Pass 2, report.**
 
-Execute this exact block (fill in filenames):
+**Pass 1:**
 ```python
-import sys, os
-sys.path.insert(0, '/mnt/data')
-os.chdir('/mnt/data')
 from run_artwork_check import run_full_check, display_vision_tasks
+report, tasks = run_full_check("[copy].xlsx", ["[artwork].pdf"], "./output")
+if not tasks:
+    print(report)
+else:
+    display_vision_tasks(tasks)  # renders images + prints JSON template (visual_artwork_value: "")
+```
 
-report, tasks = run_full_check("[copy].xlsx", ["[artwork].pdf"], "/mnt/data/output")
-if tasks:
-    display_vision_tasks(tasks)   # images render inline — GPT reads them here
-    import json
-    overrides = {
-        "vision_audit": {"source": "manual_image_read",
-                         "task_hash": "<task_hash from vision_tasks.json>"},
-        "overrides": [{"finding_id": "<id>", "visual_artwork_value": "<text>",
-            "found": True, "notes": "Visually verified on page X, [panel], [lang]",
-            "evidence": "focus_crop", "evidence_path": "<focus_crop path>"}]
-    }
-    open("/mnt/data/output/vision_overrides.json","w").write(json.dumps(overrides))
-    report, _ = run_full_check("[copy].xlsx", ["[artwork].pdf"], "/mnt/data/output",
-                               vision_overrides_path="/mnt/data/output/vision_overrides.json")
+**Vision read** (between code cells — for each item displayed):
+- Look at the page image and focus_crop above; retype ACTUAL visible text → `visual_artwork_value`
+- Check diacritics, hyphens vs em-dashes; font ≤6.5pt / numbers / % / curved text
+- `NOT FOUND` items: scan full page; set `found: false`, `visual_artwork_value: ""`
+- **Forbidden:** copying `script_artwork_value` into `visual_artwork_value`
+- `task_hash`, `finding_id`, `evidence`, `evidence_path` are pre-filled in the template — do not change them
+
+**Pass 2:**
+```python
+import json
+# Use the template printed above. Fill ONLY visual_artwork_value — from the image, nothing else.
+overrides = { ... }  # completed template — visual_artwork_value filled from image reading
+open("./output/vision_overrides.json","w").write(json.dumps(overrides))
+report, _ = run_full_check("[copy].xlsx", ["[artwork].pdf"], "./output",
+                           vision_overrides_path="./output/vision_overrides.json")
 print(report)
 ```
 
-**Reading the images (vision pass):**
-- Each item shows a full-page image first (holistic view) then a `focus_crop` if available
-- `NOT FOUND` items have no focus crop — scan the full page image
-- Retype ACTUAL visible artwork text character-by-character
-- Check diacritics, hyphens vs em-dashes; font ≤6.5pt / numbers / % / curved text
-- `task_hash` + `evidence_path` come from the template printed by `display_vision_tasks()` — **Forbidden:** copying `script_artwork_value` into `visual_artwork_value` without reading the image
-
 **Cannot open images** → `⛔ VISUAL VERIFICATION NOT EXECUTED`; omit Section D.
-**NEVER** write "visual verification required" in Notes — only `"Visually verified on page X..."` after actually reading the images.
+**NEVER** write "visual verification required" in Notes — only `"Visually verified on page X..."`.
 
 ---
 
