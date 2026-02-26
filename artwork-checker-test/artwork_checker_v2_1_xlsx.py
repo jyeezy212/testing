@@ -1920,7 +1920,9 @@ class ArtworkMatcher:
                 ingredient_text, text_runs, artwork_lookup, has_3a
             )
             if ingredient_finding.status_code != StatusCode.OK:
-                ingredient_finding.issue_id = f"D-{issue_counter + 1:03d}"
+                # Offset 0 when formula was found (formula ID slot not consumed),
+                # offset 1 when formula was NOT found (formula consumed issue_counter).
+                ingredient_finding.issue_id = f"D-{issue_counter + (0 if formula_found else 1):03d}"
             findings.append(ingredient_finding)
         else:
             # No formula number, match whole text

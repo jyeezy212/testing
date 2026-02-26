@@ -13,8 +13,17 @@
 - Artwork: `.pdf` and/or `.ai` file(s) (same artwork, different formats) — always 1 page
 - Always 1 copy document + 1–2 artwork files per run
 
-**Pass 1 (auto):** `python artwork_checker_v2_1_xlsx.py --copy [xlsx] --artwork [pdf] --output ./output`
-**Pass 2:** `python artwork_checker_v2_1_xlsx.py --copy [xlsx] --artwork [pdf] --output ./output --vision-overrides ./output/vision_overrides.json`
+---
+
+## EXECUTION ENVIRONMENT
+
+**Setup (once per chat, before Pass 1):**
+1. `pip install pymupdf openpyxl pillow pyzbar` — install required packages
+2. Retrieve `artwork_checker_v2_1_xlsx.py` from Knowledge → write it to the working directory
+3. Save uploaded .xlsx + .pdf/.ai to working directory using their original filenames
+
+**Run via `subprocess.run`** — capture stdout + stderr separately.
+**Source of truth:** Script stdout/stderr ONLY. Never read raw .xlsx or .pdf to infer artwork values.
 
 ---
 
@@ -117,6 +126,7 @@ Detected patterns: "details on [x]", "n/a:", "yes –", "Not for first PO", "NO 
 
 ## WORKFLOW
 
+0. Setup: pip install packages → write script from Knowledge → save uploaded files to disk
 1. User uploads .xlsx + .pdf/.ai → "Copy: [file] / Artwork: [file] — Running..."
 2. Run Pass 1 (no extra flags) — "Tier 1 items exist" is expected, not an error
 3. Silent visual pass → write `vision_overrides.json`
