@@ -196,14 +196,16 @@ def run_full_check(copy_path, artwork_paths, output_dir="./output",
 
 def display_vision_tasks(tasks):
     """
-    Display vision task images inline for the GPT visual pass.
+    Display vision evidence for the GPT visual pass.
 
-    In Code Interpreter / Jupyter this renders the images directly in output.
-    Outside IPython it prints file paths as a fallback.
+    Shows only: full page image(s) + contact sheet(s) (typically 2–8 images
+    total), then a text-only item list and the overrides template.  Individual
+    focus crop files are NOT displayed inline — the contact sheets contain all
+    tight crops at 1:1 scale, each labeled with its item ID.
 
     After calling this function the GPT must:
-      1. Read the displayed images character-by-character
-      2. Write ./output/vision_overrides.json with vision_audit stamp + evidence fields
+      1. Read the displayed images (page overview + contact sheets)
+      2. Write ./output/vision_overrides.json with vision_audit stamp + evidence
       3. Call run_full_check() again with vision_overrides_path set
     """
     try:
@@ -212,8 +214,16 @@ def display_vision_tasks(tasks):
     except ImportError:
         _has_ipython = False
 
+    def _show_image(path, label):
+        print(f"\n[{label}]")
+        if _has_ipython:
+            display(IPImage(filename=str(path)))
+        else:
+            print(f"  image: {path}")
+
     items = tasks.get("items", [])
     page_images = tasks.get("page_images", {})
+    contact_sheets = tasks.get("contact_sheets", [])
     output_dir = tasks.get("output_dir", "./output")
     task_hash = tasks.get("task_hash", "")
     overrides_path = str(Path(output_dir) / "vision_overrides.json")
@@ -221,60 +231,78 @@ def display_vision_tasks(tasks):
     sep = "=" * 60
     print(f"\n{sep}")
     print(f"VISION PASS — {len(items)} item(s) require visual verification")
+    print(f"Contact sheets: {len(contact_sheets)}  |  Display images: "
+          f"{len(page_images) + len(contact_sheets)}")
     print(sep)
 
-    # Full-page image(s) first: holistic overview
+    # --- Full page image(s): holistic orientation ---
     for page_num, path in page_images.items():
-        print(f"\n[Page {page_num} — full artwork at 300 DPI — read holistically]")
-        if _has_ipython:
-            display(IPImage(filename=str(path)))
-        else:
-            print(f"  image: {path}")
+        _show_image(path, f"Page {page_num} — full artwork at 300 DPI — read holistically")
 
-    # Per-item detail
+    # --- Contact sheets: all tight crops at 1:1, labeled with ID ---
+    if contact_sheets:
+        print(f"\n{'─' * 60}")
+        print("CONTACT SHEETS — each tile is labeled with its item ID")
+        for sheet in contact_sheets:
+            ids_preview = ", ".join(sheet.get("items", [])[:6])
+            suffix = "…" if len(sheet.get("items", [])) > 6 else ""
+            _show_image(
+                sheet["sheet_path"],
+                f"Sheet: {ids_preview}{suffix}"
+            )
+    else:
+        print("\n[No contact sheets generated — scan full page image above for all items]")
+
+    # --- Text-only item list (no per-item image rendering) ---
     print(f"\n{'─' * 60}")
-    print("ITEMS TO VERIFY:")
+    print("ITEMS TO VERIFY (read from contact sheet tiles or wide crops below):\n")
     for item in items:
-        print(f"\n• [{item['id']}] {item['field_name']}  |  {item['panel']}  |  {item['language']}")
-        print(f"  Copy value  : {item['copy_value']}")
-        print(f"  Script found: {item['script_artwork_value']}  ({item['script_match_type']})")
+        wide = item.get("focus_crop_wide")
+        evidence_label = "wide crop" if wide else ("tight crop" if item.get("focus_crop") else "NOT FOUND — scan full page")
+        print(f"• [{item['id']}] {item['field_name']} | {item['panel']} | {item['language']}")
+        print(f"  Copy     : {item['copy_value']}")
+        print(f"  Script   : {item['script_artwork_value']}  ({item['script_match_type']})")
+        print(f"  Evidence : {evidence_label}")
         if item.get("zoom_reasons"):
-            print(f"  Zoom reasons: {', '.join(item['zoom_reasons'])}")
+            print(f"  Flags    : {', '.join(item['zoom_reasons'])}")
+        # Display wide crops inline individually (fewer in number, high priority)
+        if wide:
+            _show_image(wide, f"{item['id']} — wide crop (long/curved/risky text)")
+        print()
 
-        focus = item.get("focus_crop")
-        if focus:
-            print(f"  [Focus crop — zoomed to matched text]")
-            if _has_ipython:
-                display(IPImage(filename=str(focus)))
-            else:
-                print(f"  focus: {focus}")
-        else:
-            print("  [NOT FOUND — scan the full page image above]")
-
-    # Overrides template — pre-filled with required fields including audit stamp and evidence
+    # --- Overrides template: evidence_path prefers wide > tight > page ---
     print(f"\n{sep}")
-    print("NEXT STEP — read each image above; fill 'visual_artwork_value' from what you see — DO NOT copy script_artwork_value — then write:")
+    print("NEXT STEP — read each image; fill 'visual_artwork_value' from what you "
+          "see — DO NOT copy script_artwork_value — then write:")
     print(f"  {overrides_path}")
+
+    def _best_evidence(item):
+        if item.get("focus_crop_wide"):
+            return "focus_crop_wide", item["focus_crop_wide"]
+        if item.get("focus_crop"):
+            return "focus_crop", item["focus_crop"]
+        return "page_image", page_images.get(str(item.get("page_guess", 1)), "")
+
     template = {
         "vision_audit": {
             "source": "manual_image_read",
             "task_hash": task_hash,
         },
-        "overrides": [
-            {
-                "finding_id": item["id"],
-                "visual_artwork_value": "",
-                "found": True,
-                "notes": (
-                    f"Visually verified on page {item['page_guess']}, "
-                    f"{item['panel']}, {item['language']}"
-                ),
-                "evidence": "focus_crop" if item.get("focus_crop") else "page_image",
-                "evidence_path": item.get("focus_crop") or page_images.get(str(item.get("page_guess", 1)), ""),
-            }
-            for item in items
-        ],
+        "overrides": [],
     }
+    for item in items:
+        ev_type, ev_path = _best_evidence(item)
+        template["overrides"].append({
+            "finding_id": item["id"],
+            "visual_artwork_value": "",
+            "found": True,
+            "notes": (
+                f"Visually verified on page {item['page_guess']}, "
+                f"{item['panel']}, {item['language']}"
+            ),
+            "evidence": ev_type,
+            "evidence_path": ev_path,
+        })
     print(json.dumps(template, indent=2, ensure_ascii=False))
     print(sep)
 

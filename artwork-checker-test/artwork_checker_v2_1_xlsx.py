@@ -49,6 +49,7 @@ import json
 import os
 import csv
 import hashlib
+import math
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Set, Any, Union
 from dataclasses import dataclass, field
@@ -2673,18 +2674,151 @@ class MarkdownRenderer:
 
 class VisionExporter:
     """
-    Renders the full artwork page at high DPI and, for items with known
-    bounding boxes, generates a targeted focus crop centered on the matched
-    text region.  The AI sees the whole artwork first (orientation), then
-    reads the focus crop for precise character-level verification.
+    Renders the full artwork page at high DPI and generates focus crops for
+    items requiring visual verification.  Evidence is displayed via contact
+    sheets (montage images) rather than individual inline images, keeping the
+    GPT response stable regardless of item count.
 
-    NOT FOUND items have no focus crop — the AI must scan the full page image.
+    Two crop sizes are generated per item:
+      - focus_crop (tight): standard 100px pad, min 500×250 — used for tiling
+      - focus_crop_wide: 300px pad, min 1200×600 — for long/curved/risky text
+
+    Contact sheets (SHEET_COLS × SHEET_ROWS tiles) are created from tight crops
+    at 1:1 scale (no downscaling) with an ID label on each tile.
     """
 
-    PAGE_DPI = 300        # Full-page render resolution
-    FOCUS_PAD = 100       # Pixels of padding around matched bbox in the crop
-    FOCUS_MIN_W = 500     # Minimum focus crop width (pixels)
-    FOCUS_MIN_H = 250     # Minimum focus crop height (pixels)
+    PAGE_DPI = 300            # Full-page render resolution
+    FOCUS_PAD = 100           # Tight crop padding (pixels)
+    FOCUS_MIN_W = 500         # Tight crop minimum width
+    FOCUS_MIN_H = 250         # Tight crop minimum height
+    FOCUS_PAD_WIDE = 300      # Wide crop padding
+    FOCUS_MIN_W_WIDE = 1200   # Wide crop minimum width
+    FOCUS_MIN_H_WIDE = 600    # Wide crop minimum height
+    SHEET_COLS = 3            # Contact sheet columns
+    SHEET_ROWS = 3            # Contact sheet rows
+    SHEET_MARGIN = 40         # Pixels between tiles and border
+
+    # Field name keywords that always get a wide crop
+    _WIDE_CROP_FIELDS = ("ingredient", "marketing copy")
+
+    def _needs_wide_crop(self, finding: "MatchFinding") -> bool:
+        """Return True if this finding warrants a wide context crop."""
+        if any("curved" in r.lower() for r in finding.zoom_reasons):
+            return True
+        if finding.match_type in (
+            MatchType.NEAR_MATCH,
+            MatchType.MISMATCH,
+            MatchType.MISSING_IN_ARTWORK,
+        ):
+            return True
+        if len(finding.copy_value or "") > 80:
+            return True
+        fn_lower = (finding.field_name or "").lower()
+        if any(kw in fn_lower for kw in self._WIDE_CROP_FIELDS):
+            return True
+        return False
+
+    def _make_crop(
+        self,
+        full_img: "Image.Image",
+        run_bboxes: List[Tuple],
+        scale: float,
+        pad: int,
+        min_w: int,
+        min_h: int,
+    ) -> "Image.Image":
+        """Crop full_img to the union bbox of run_bboxes, expanded by pad/min dims."""
+        img_w, img_h = full_img.size
+        ux0 = min(b[0] for b in run_bboxes) * scale
+        uy0 = min(b[1] for b in run_bboxes) * scale
+        ux1 = max(b[2] for b in run_bboxes) * scale
+        uy1 = max(b[3] for b in run_bboxes) * scale
+        cx = (ux0 + ux1) / 2
+        cy = (uy0 + uy1) / 2
+        half_w = max((ux1 - ux0) / 2 + pad, min_w / 2)
+        half_h = max((uy1 - uy0) / 2 + pad, min_h / 2)
+        x0 = max(0, int(cx - half_w))
+        y0 = max(0, int(cy - half_h))
+        x1 = min(img_w, int(cx + half_w))
+        y1 = min(img_h, int(cy + half_h))
+        return full_img.crop((x0, y0, x1, y1))
+
+    def _generate_contact_sheets(
+        self,
+        items: List[Dict[str, Any]],
+        sheets_dir: Path,
+    ) -> List[Dict[str, Any]]:
+        """
+        Create contact sheet montages from tight focus crops at 1:1 scale.
+        Returns list of {"sheet_path": ..., "items": [...]} dicts.
+        """
+        sheets_dir.mkdir(parents=True, exist_ok=True)
+        croppable = [it for it in items if it.get("focus_crop")]
+        if not croppable:
+            return []
+
+        per_sheet = self.SHEET_COLS * self.SHEET_ROWS
+        contact_sheets = []
+        sheet_idx = 1
+        label_h = 32  # pixels for ID label bar at top of each tile
+
+        for batch_start in range(0, len(croppable), per_sheet):
+            batch = croppable[batch_start: batch_start + per_sheet]
+            loaded: List[Tuple[str, "Image.Image"]] = []
+            for it in batch:
+                try:
+                    img = Image.open(it["focus_crop"]).convert("RGB")
+                    loaded.append((it["id"], img))
+                except Exception:
+                    continue
+            if not loaded:
+                sheet_idx += 1
+                continue
+
+            cell_w = max(img.width for _, img in loaded)
+            cell_h = max(img.height for _, img in loaded)
+            tile_h = cell_h + label_h
+            m = self.SHEET_MARGIN
+            cols = min(self.SHEET_COLS, len(loaded))
+            rows = math.ceil(len(loaded) / cols)
+
+            canvas_w = cols * cell_w + (cols + 1) * m
+            canvas_h = rows * tile_h + (rows + 1) * m
+            canvas = Image.new("RGB", (canvas_w, canvas_h), (255, 255, 255))
+            draw = ImageDraw.Draw(canvas)
+            try:
+                font = ImageFont.truetype("arial.ttf", 20)
+            except Exception:
+                try:
+                    font = ImageFont.truetype(
+                        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
+                    )
+                except Exception:
+                    font = ImageFont.load_default()
+
+            ids_in_sheet: List[str] = []
+            for idx, (item_id, img) in enumerate(loaded):
+                col = idx % cols
+                row = idx // cols
+                tile_x = m + col * (cell_w + m)
+                tile_y = m + row * (tile_h + m)
+                # Dark label bar
+                draw.rectangle(
+                    [tile_x, tile_y, tile_x + cell_w, tile_y + label_h],
+                    fill=(40, 40, 40),
+                )
+                draw.text((tile_x + 6, tile_y + 6), item_id, fill=(255, 255, 255), font=font)
+                # Paste crop at 1:1 below label
+                canvas.paste(img, (tile_x, tile_y + label_h))
+                ids_in_sheet.append(item_id)
+
+            sheet_path = sheets_dir / f"sheet_{sheet_idx:02d}.png"
+            canvas.save(str(sheet_path))
+            logger.info(f"Contact sheet {sheet_idx}: {len(loaded)} crops → {sheet_path}")
+            contact_sheets.append({"sheet_path": str(sheet_path), "items": ids_in_sheet})
+            sheet_idx += 1
+
+        return contact_sheets
 
     def export(
         self,
@@ -2692,24 +2826,26 @@ class VisionExporter:
         match_findings: List[MatchFinding],
         output_dir: Path,
     ) -> Path:
-        """Render full-page images and per-item focus crops; returns vision_tasks.json path."""
+        """Render full-page images, focus crops, wide crops, contact sheets;
+        returns vision_tasks.json path."""
         if not PIL_AVAILABLE or not PYMUPDF_AVAILABLE:
             raise RuntimeError("PIL and PyMuPDF must be installed for vision export")
 
         vision_dir = output_dir / "gpt_vision"
         pages_dir = vision_dir / "pages"
-        focus_dir = vision_dir / "focus"
-        for d in (vision_dir, pages_dir, focus_dir):
+        crops_dir = vision_dir / "crops"
+        wide_dir = vision_dir / "focus_wide"
+        sheets_dir = vision_dir / "sheets"
+        for d in (vision_dir, pages_dir, crops_dir, wide_dir):
             d.mkdir(parents=True, exist_ok=True)
 
         doc = fitz.open(str(pdf_path))
-        page_images: Dict[int, Image.Image] = {}   # PIL images kept in memory for cropping
+        page_images: Dict[int, Image.Image] = {}
         page_image_paths: Dict[int, str] = {}
 
         for page_idx in range(len(doc)):
             page = doc[page_idx]
             page_num = page_idx + 1
-
             mat = fitz.Matrix(self.PAGE_DPI / 72, self.PAGE_DPI / 72)
             pix = page.get_pixmap(matrix=mat)
             full_img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
@@ -2721,8 +2857,8 @@ class VisionExporter:
 
         doc.close()
 
-        # --- Build vision items with optional focus crops ---
-        scale = self.PAGE_DPI / 72  # PDF points → pixels
+        # --- Build vision items with tight + optional wide crops ---
+        scale = self.PAGE_DPI / 72
         items = []
         for finding in match_findings:
             needs_vision = (
@@ -2739,41 +2875,39 @@ class VisionExporter:
                         page_num = run.page_number
                         break
 
-            # --- Focus crop: union bbox of all matched runs on this page ---
-            focus_crop_path: Optional[str] = None
+            _fallback_id = f"{finding.field_name}|{finding.panel}|{finding.language}"
+            safe_id = (finding.issue_id or _fallback_id).replace("/", "_").replace("|", "_")
+
             run_bboxes = [
                 r.bbox for r in finding.matched_runs
                 if r.bbox and r.page_number == page_num
             ]
+
+            focus_crop_path: Optional[str] = None
+            focus_crop_wide_path: Optional[str] = None
+
             if run_bboxes and page_num in page_images:
                 full_img = page_images[page_num]
-                img_w, img_h = full_img.size
 
-                # Union of all matched-run bboxes (PDF coords → pixels)
-                ux0 = min(b[0] for b in run_bboxes) * scale
-                uy0 = min(b[1] for b in run_bboxes) * scale
-                ux1 = max(b[2] for b in run_bboxes) * scale
-                uy1 = max(b[3] for b in run_bboxes) * scale
-
-                # Expand to minimum size, centered on the text
-                cx = (ux0 + ux1) / 2
-                cy = (uy0 + uy1) / 2
-                half_w = max((ux1 - ux0) / 2 + self.FOCUS_PAD, self.FOCUS_MIN_W / 2)
-                half_h = max((uy1 - uy0) / 2 + self.FOCUS_PAD, self.FOCUS_MIN_H / 2)
-
-                crop_x0 = max(0, int(cx - half_w))
-                crop_y0 = max(0, int(cy - half_h))
-                crop_x1 = min(img_w, int(cx + half_w))
-                crop_y1 = min(img_h, int(cy + half_h))
-
-                crop = full_img.crop((crop_x0, crop_y0, crop_x1, crop_y1))
-                _fallback_id = f"{finding.field_name}|{finding.panel}|{finding.language}"
-                safe_id = (finding.issue_id or _fallback_id).replace("/", "_").replace("|", "_")
-                crop_path = focus_dir / f"{safe_id}_page_{page_num}.png"
+                # Tight crop
+                crop = self._make_crop(
+                    full_img, run_bboxes, scale,
+                    self.FOCUS_PAD, self.FOCUS_MIN_W, self.FOCUS_MIN_H,
+                )
+                crop_path = crops_dir / f"{safe_id}_page_{page_num}.png"
                 crop.save(str(crop_path))
                 focus_crop_path = str(crop_path)
 
-            _fallback_id = f"{finding.field_name}|{finding.panel}|{finding.language}"
+                # Wide crop for risky items
+                if self._needs_wide_crop(finding):
+                    wide = self._make_crop(
+                        full_img, run_bboxes, scale,
+                        self.FOCUS_PAD_WIDE, self.FOCUS_MIN_W_WIDE, self.FOCUS_MIN_H_WIDE,
+                    )
+                    wide_path = wide_dir / f"{safe_id}_page_{page_num}.png"
+                    wide.save(str(wide_path))
+                    focus_crop_wide_path = str(wide_path)
+
             item: Dict[str, Any] = {
                 "id": finding.issue_id or _fallback_id,
                 "panel": finding.panel,
@@ -2787,8 +2921,12 @@ class VisionExporter:
                 "page_guess": page_num,
                 "page_image": page_image_paths.get(page_num, ""),
                 "focus_crop": focus_crop_path,
+                "focus_crop_wide": focus_crop_wide_path,
             }
             items.append(item)
+
+        # --- Generate contact sheets ---
+        contact_sheets = self._generate_contact_sheets(items, sheets_dir)
 
         # --- Write vision_tasks.json ---
         required_ids = [it["id"] for it in items]
@@ -2812,13 +2950,15 @@ class VisionExporter:
             "artwork_pdf": str(pdf_path),
             "output_dir": str(output_dir),
             "page_images": {str(k): v for k, v in page_image_paths.items()},
+            "contact_sheets": contact_sheets,
             "required_ids": required_ids,
             "task_hash": task_hash,
             "items": items,
         }
         tasks_path = vision_dir / "vision_tasks.json"
         tasks_path.write_text(json.dumps(tasks_data, indent=2, ensure_ascii=False), encoding="utf-8")
-        logger.info(f"Vision tasks written: {tasks_path} ({len(items)} items)")
+        logger.info(f"Vision tasks written: {tasks_path} ({len(items)} items, "
+                    f"{len(contact_sheets)} sheet(s))")
 
         # --- Write VISION_INSTRUCTIONS.md ---
         instructions = (
@@ -2826,23 +2966,19 @@ class VisionExporter:
             "This run produced items requiring visual verification.\n\n"
             "## Workflow\n\n"
             "1. Open `vision_tasks.json`\n"
-            "2. For each item:\n"
-            "   - Open `page_image` first — this is the full artwork rendered at "
-            "300 DPI. Read it holistically, just like a human reads a physical "
-            "label: scan the whole artwork to orient yourself.\n"
-            "   - If `focus_crop` is provided (non-null), open it next — this is a "
-            "zoomed-in crop centered on the matched text region. Use it to read "
-            "fine-detail text character-by-character.\n"
-            "   - `NOT FOUND` items have no `focus_crop` — search the entire "
-            "`page_image` carefully.\n"
+            "2. View the full page image (orientation) then contact sheet(s) (zoomed tiles).\n"
+            "3. For each item in the item list:\n"
+            "   - Read the tile labeled with the item ID on the contact sheet.\n"
+            "   - For wide-crop items, open `focus_crop_wide` for long/curved text.\n"
+            "   - `NOT FOUND` items have no crop — scan the full page image.\n"
             "   - Retype the ACTUAL visible artwork text character-by-character.\n"
-            "3. Write `output/vision_overrides.json`:\n\n"
+            "4. Write `output/vision_overrides.json`:\n\n"
             "```json\n"
-            '{"vision_audit":{"source":"manual_image_read","task_hash":"<task_hash from vision_tasks.json>"},\n'
+            '{"vision_audit":{"source":"manual_image_read","task_hash":"<task_hash>"},\n'
             '"overrides":[\n'
             '  {"finding_id":"<id>","visual_artwork_value":"<text>",'
             '"found":true,"notes":"Visually verified on page X, [panel], [lang]",'
-            '"evidence":"focus_crop|page_image","evidence_path":"<path>"}\n'
+            '"evidence":"focus_crop_wide|focus_crop|page_image","evidence_path":"<path>"}\n'
             "]}\n"
             "```\n\n"
             "Sentinel block is printed to stdout between:\n"
@@ -2861,13 +2997,12 @@ class VisionExporter:
             "item_count": item_count,
             "instructions": (
                 "1) Open vision_tasks.json. "
-                "2) For each item: open page_image (full 300-DPI artwork) to read "
-                "the whole label holistically, then open focus_crop (zoomed crop) "
-                "if provided for character-level detail. NOT FOUND items have no "
-                "focus_crop — scan the full page_image. "
-                "3) Retype actual visible artwork text character-by-character. "
-                "4) Write output/vision_overrides.json. "
-                "5) Re-run with --vision-overrides ./output/vision_overrides.json"
+                "2) View page image (orientation) then contact sheet(s) (zoomed tiles). "
+                "3) For each item: read its labeled tile; use focus_crop_wide for long/curved text. "
+                "NOT FOUND items — scan full page_image. "
+                "4) Retype actual visible artwork text character-by-character. "
+                "5) Write output/vision_overrides.json. "
+                "6) Re-run with --vision-overrides ./output/vision_overrides.json"
             ),
         }, indent=2))
         print("<<<END_GPT_VISION_REQUIRED>>>")

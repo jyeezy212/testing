@@ -52,7 +52,7 @@ report, tasks = run_full_check("[copy].xlsx", ["[artwork].pdf"], "./output")
 if not tasks:
     print(report)
 else:
-    display_vision_tasks(tasks)  # renders images + prints JSON template (visual_artwork_value: "")
+    display_vision_tasks(tasks)  # displays page + sheets + prints JSON template
 ```
 If `tasks` is empty: print report and end. No pause.
 If `tasks` is not empty: display images + JSON template, then output exactly:
@@ -61,24 +61,28 @@ If `tasks` is not empty: display images + JSON template, then output exactly:
 Stop. Do not read images yet. Wait for the user to respond.
 
 **Visual Verification + Pass 2 (Turn 2 — triggered by user typing "Continue"):**
-The user's "Continue" is the instruction to now manually read the artwork. For each item displayed in Turn 1:
-- Open `page_image` and `focus_crop`; retype ACTUAL visible text character-by-character → `visual_artwork_value`
+The user's "Continue" triggers manual artwork reading. Evidence displayed in Turn 1: full page image(s) + contact sheet(s) (tight crops tiled 1:1, labeled with ID) + individual wide crops for long/curved/risky items.
+
+For each item in the item list:
+- Read labeled tile on the contact sheet; use `focus_crop_wide` if shown (long/curved text)
+- Retype ACTUAL visible text character-by-character → `visual_artwork_value`
 - Check diacritics, hyphens vs em-dashes; font ≤6.5pt / numbers / % / curved text
-- `NOT FOUND` items: scan full page; set `found: false`, `visual_artwork_value: ""`
+- `NOT FOUND`: scan full page; set `found: false`, `visual_artwork_value: ""`
 - **Forbidden:** copying `script_artwork_value` into `visual_artwork_value`
-- `task_hash`, `finding_id`, `evidence`, `evidence_path` are pre-filled — do not change
+- `task_hash`, `finding_id`, `evidence`, `evidence_path` pre-filled — do not change
+- **Workload size never justifies abort.** Complete all items; no additional "Continue" prompts.
 
 Then immediately run Pass 2 in the same Turn 2 response:
 ```python
 import json
-overrides = { ... }  # template from Turn 1 with visual_artwork_value filled from images
+overrides = { ... }  # Turn 1 template with visual_artwork_value filled from images
 open("./output/vision_overrides.json","w").write(json.dumps(overrides))
 report, _ = run_full_check("[copy].xlsx", ["[artwork].pdf"], "./output",
                            vision_overrides_path="./output/vision_overrides.json")
 print(report)
 ```
 **Cannot open images** → `⛔ VISUAL VERIFICATION NOT EXECUTED`; omit Section D.
-**NEVER** write "visual verification required" in Notes — only `"Visually verified on page X..."`.
+Notes: `"Visually verified on page X..."` only — never write "visual verification required".
 
 ---
 
@@ -133,7 +137,7 @@ Detected patterns: "details on [x]", "n/a:", "yes –", "Not for first PO", "NO 
 
 **Language Prefixes** — FR_, ES_, DE_, NL_, IT_, DA_, FI_, PT_, PL_, RU_ are REAL copy text on artwork. Keep for matching. Must be uppercase. Flag spacing discrepancies (e.g., "FR_ " vs "FR_").
 **Ingredient List** — Two report rows: (1) Formula number — verify (XXXXX) matches, (2) Ingredient text character-by-character. Back Panel — English only.
-**Curved/Circular Text** — PyMuPDF may garble curved paths. Flag ⚠️ in D; use `focus_crop` or `page_image` to read actual artwork text.
+**Curved/Circular Text** — PyMuPDF may garble curved paths. Flag ⚠️ in D; a `focus_crop_wide` is auto-generated — use it to read actual artwork text.
 **Barcode (Section F)** — Columns: Symbology, Encoded Digits, Check Digit Valid, X-Dim (mm), Quiet Zone (mm), Module Count, Print Contrast, Scan Test. Unmeasurable → "Manual check required".
 **Deferred Fields** — "details on [component]" → note "[N] fields deferred to [component]", excluded from D.
 **Project Name** — "amika" + C2 (Product Name) + C3 (Secondary Name) + metric volume from C4.
