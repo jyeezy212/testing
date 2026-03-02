@@ -8,7 +8,7 @@ In Code Interpreter / GPT context, import this module and use the Python API:
     report, tasks = run_full_check("doc.xlsx", ["art.pdf"], "./output")
     if tasks:
         display_vision_tasks(tasks)   # images appear inline; GPT reads them
-        # GPT writes ./output/vision_overrides.json (including vision_audit + evidence fields), then:
+        # GPT edits vision_overrides.prefill.json → saves as vision_overrides.json, then:
         report, _ = run_full_check("doc.xlsx", ["art.pdf"], "./output",
                                    vision_overrides_path="./output/vision_overrides.json")
     print(report)
@@ -24,6 +24,9 @@ import json
 import argparse
 import importlib.util
 from pathlib import Path
+
+SCRIPT_REPORT_START = "<<<SCRIPT_REPORT_START>>>"
+SCRIPT_REPORT_END   = "<<<SCRIPT_REPORT_END>>>"
 
 
 # ---------------------------------------------------------------------------
@@ -140,8 +143,35 @@ def validate_vision_overrides(output_dir, vision_overrides_path):
                     f"VISION OVERRIDE REJECTED: {fid} evidence_path does not exist: {evp}"
                 )
 
+    # Require confirmed=true for all overrides
+    unconfirmed = [o.get("finding_id", "?") for o in overrides if o.get("confirmed") is not True]
+    if unconfirmed:
+        raise ValueError(
+            f"VISION OVERRIDE REJECTED: {len(unconfirmed)} item(s) not confirmed "
+            f"(set confirmed=true after visual check): {sorted(unconfirmed)[:10]}"
+        )
+
     # Note: identical-rate check removed — audit stamp + evidence fields are
     # the authoritative gate; confirmed-correct values will legitimately match.
+
+
+def _validate_report_schema(report: str) -> None:
+    """
+    Minimal schema validation for the canonical markdown report.
+    Fails fast if a core table header is missing, catching renderer regressions
+    before anything is presented to the caller.
+    """
+    required_snippets = [
+        "### C. Label-Claim Conversion",
+        "| Source | Declared (mL) | Calculated (fl oz) | Declared (fl oz) |",
+        "### D. Artwork Match",
+    ]
+    missing = [s for s in required_snippets if s not in report]
+    if missing:
+        raise ValueError(
+            "REPORT SCHEMA VIOLATION: missing required snippet(s): "
+            + "; ".join([repr(m) for m in missing])
+        )
 
 
 def run_full_check(copy_path, artwork_paths, output_dir="./output",
@@ -187,11 +217,57 @@ def run_full_check(copy_path, artwork_paths, output_dir="./output",
             output_dir=str(output_dir),
             vision_overrides_path=str(vision_overrides_path) if vision_overrides_path else None,
         )
-        return report, None
+        # --- HARDENING: Schema guard (fail fast if a core table header is missing) ---
+        _validate_report_schema(report)
+
+        # --- HARDENING: Wrap report in immutable sentinel block ---
+        locked = f"{SCRIPT_REPORT_START}\n{report}\n{SCRIPT_REPORT_END}"
+        return locked, None
 
     except VisionPassRequired as e:
         tasks = json.loads(Path(e.tasks_path).read_text(encoding="utf-8"))
         return None, tasks
+
+
+def extract_script_report_or_raise(report: str) -> str:
+    """
+    Enforce canonical report passthrough.
+
+    - If sentinels exist: return ONLY the inner content, and raise if any
+      non-whitespace content exists outside the sentinel block.
+    - If sentinels are absent: return report as-is (legacy/no-sentinel mode).
+    """
+    if report is None:
+        raise ValueError("No report provided")
+
+    if SCRIPT_REPORT_START in report or SCRIPT_REPORT_END in report:
+        if SCRIPT_REPORT_START not in report or SCRIPT_REPORT_END not in report:
+            raise ValueError("REPORT INTEGRITY ERROR: Sentinel start/end mismatch")
+
+        pre, rest = report.split(SCRIPT_REPORT_START, 1)
+        inner, post = rest.split(SCRIPT_REPORT_END, 1)
+
+        if pre.strip():
+            raise ValueError("REPORT INTEGRITY ERROR: Non-whitespace content before sentinel block")
+        if post.strip():
+            raise ValueError("REPORT INTEGRITY ERROR: Non-whitespace content after sentinel block")
+
+        return inner.strip("\n")
+
+    return report
+
+
+def print_script_report_verbatim(report: str) -> None:
+    """
+    Single allowed output call for the report: prints ONLY the canonical
+    markdown report, stripping sentinels and hard-failing on extra content.
+    """
+    canonical = extract_script_report_or_raise(report)
+    try:
+        print(canonical)
+    except UnicodeEncodeError:
+        sys.stdout.buffer.write(canonical.encode("utf-8", errors="replace"))
+        sys.stdout.buffer.write(b"\n")
 
 
 def display_vision_tasks(tasks):
@@ -205,7 +281,8 @@ def display_vision_tasks(tasks):
 
     After calling this function the GPT must:
       1. Read the displayed images (page overview + contact sheets)
-      2. Write ./output/vision_overrides.json with vision_audit stamp + evidence
+      2. Edit ./output/vision_overrides.prefill.json (set confirmed=True, correct values)
+         → save as ./output/vision_overrides.json
       3. Call run_full_check() again with vision_overrides_path set
     """
     try:
@@ -270,12 +347,7 @@ def display_vision_tasks(tasks):
             _show_image(wide, f"{item['id']} — wide crop (long/curved/risky text)")
         print()
 
-    # --- Overrides template: evidence_path prefers wide > tight > page ---
-    print(f"\n{sep}")
-    print("NEXT STEP — read each image; fill 'visual_artwork_value' from what you "
-          "see — DO NOT copy script_artwork_value — then write:")
-    print(f"  {overrides_path}")
-
+    # --- Overrides prefill: auto-fills exact matches; writes file to disk ---
     def _best_evidence(item):
         if item.get("focus_crop_wide"):
             return "focus_crop_wide", item["focus_crop_wide"]
@@ -292,10 +364,12 @@ def display_vision_tasks(tasks):
     }
     for item in items:
         ev_type, ev_path = _best_evidence(item)
+        is_exact = item.get("script_match_type") == "exact"
         template["overrides"].append({
             "finding_id": item["id"],
-            "visual_artwork_value": "",
+            "visual_artwork_value": item.get("script_artwork_value", "") if is_exact else "",
             "found": True,
+            "confirmed": False,
             "notes": (
                 f"Visually verified on page {item['page_guess']}, "
                 f"{item['panel']}, {item['language']}"
@@ -303,7 +377,15 @@ def display_vision_tasks(tasks):
             "evidence": ev_type,
             "evidence_path": ev_path,
         })
-    print(json.dumps(template, indent=2, ensure_ascii=False))
+
+    prefill_path = Path(output_dir) / "vision_overrides.prefill.json"
+    prefill_path.write_text(json.dumps(template, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    print(f"\n{sep}")
+    print("NEXT STEP — open the prefill file, verify each item, set confirmed=true:")
+    print(f"  EDIT   : {prefill_path}")
+    print(f"  SAVE AS: {overrides_path}")
+    print("Exact-match items are pre-filled; non-exact require visual_artwork_value.")
     print(sep)
 
 
@@ -332,12 +414,7 @@ def main():
     )
 
     if report:
-        # Encode-safe print for Windows consoles
-        try:
-            print(report)
-        except UnicodeEncodeError:
-            sys.stdout.buffer.write(report.encode("utf-8", errors="replace"))
-            sys.stdout.buffer.write(b"\n")
+        print_script_report_verbatim(report)
         sys.exit(0)
 
     # Vision pass needed
