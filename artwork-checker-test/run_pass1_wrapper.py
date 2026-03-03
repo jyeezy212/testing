@@ -20,6 +20,7 @@ Usage:
 
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -53,7 +54,11 @@ def main() -> None:
     output = pathlib.Path(args.output).resolve()
 
     # Build pass1 command with resolved absolute output path
-    pass1 = pathlib.Path(__file__).parent / "artwork_checker_pass1.py"
+    # _ARTWORK_CHECKER_PASS1_SCRIPT env var allows test injection of a fake script
+    pass1 = pathlib.Path(
+        os.environ.get("_ARTWORK_CHECKER_PASS1_SCRIPT")
+        or str(pathlib.Path(__file__).parent / "artwork_checker_pass1.py")
+    )
     cmd = (
         [sys.executable, str(pass1), "--copy", args.copy, "--artwork"]
         + args.artwork
@@ -163,13 +168,18 @@ def main() -> None:
     # Machine-parseable footer — MUST be the last line on stdout
     # ------------------------------------------------------------------
     footer = {
-        "status": status,
-        "returncode": proc.returncode,
         "exit_code": exit_code,
-        "output_dir": str(output),
+        "human_token": human_token,
         "missing": missing,
+        "output_dir": str(output),
+        "returncode": proc.returncode,
+        "status": status,
+        "stderr_snippet": proc.stderr[:500] if proc.stderr else "",
     }
-    print(f"PASS1_WRAPPER_RESULT: {json.dumps(footer, ensure_ascii=False)}")
+    print(
+        f"PASS1_WRAPPER_RESULT: {json.dumps(footer, ensure_ascii=False, sort_keys=True)}",
+        flush=True,
+    )
 
     sys.exit(exit_code)
 

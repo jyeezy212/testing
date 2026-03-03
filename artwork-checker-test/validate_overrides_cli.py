@@ -14,6 +14,10 @@ Exit codes:
   0  All checks passed — safe to run Pass 2.
   1  Validation failed — see error output.
   2  File not found — missing overrides or vision_tasks.json.
+
+Machine tokens (stdout):
+  VALIDATE_OVERRIDES_PASS: {"confirmed":K,"found_true":M,"items_total":N}
+  VALIDATE_OVERRIDES_FAIL: {"errors":[...]}   (written to stderr on failure)
 """
 
 import argparse
@@ -77,6 +81,17 @@ def _check_item_states(overrides_path: Path, output_dir: Path) -> list[str]:
     return issues
 
 
+def _fail(errors: list[str], exit_code: int = 1) -> None:
+    """Print VALIDATE_OVERRIDES_FAIL token to stderr and exit."""
+    fail_data = {"errors": [e.strip() for e in errors]}
+    print(
+        f"VALIDATE_OVERRIDES_FAIL: {json.dumps(fail_data, ensure_ascii=False, sort_keys=True)}",
+        file=sys.stderr,
+        flush=True,
+    )
+    sys.exit(exit_code)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Preflight validation for vision_overrides.json",
@@ -107,13 +122,13 @@ def main() -> None:
     # --- Check files exist ---
     if not overrides_path.exists():
         print(f"ERROR: overrides file not found: {overrides_path}", file=sys.stderr)
-        sys.exit(2)
+        _fail([f"overrides file not found: {overrides_path}"], exit_code=2)
 
     tasks_path = output_dir / "gpt_vision" / "vision_tasks.json"
     if not tasks_path.exists():
         print(f"ERROR: vision_tasks.json not found: {tasks_path}", file=sys.stderr)
         print("Run Pass 1 first.", file=sys.stderr)
-        sys.exit(2)
+        _fail([f"vision_tasks.json not found: {tasks_path} — run Pass 1 first."], exit_code=2)
 
     # --- Run structural validation ---
     try:
@@ -124,14 +139,14 @@ def main() -> None:
         )
     except (ValueError, FileNotFoundError) as e:
         print(f"FAIL — structural validation error:\n  {e}\n", file=sys.stderr)
-        # Also run per-item diagnostics to show all issues at once
         item_issues = _check_item_states(overrides_path, output_dir)
         if item_issues:
             print("Per-item issues detected:", file=sys.stderr)
             for issue in item_issues:
                 print(issue, file=sys.stderr)
         print(f"\n{sep}", file=sys.stderr)
-        sys.exit(1)
+        errors = [str(e)] + [i.strip() for i in item_issues]
+        _fail(errors, exit_code=1)
 
     # --- Per-item diagnostics (belt-and-suspenders) ---
     item_issues = _check_item_states(overrides_path, output_dir)
@@ -140,7 +155,7 @@ def main() -> None:
         for issue in item_issues:
             print(issue, file=sys.stderr)
         print(f"\n{sep}", file=sys.stderr)
-        sys.exit(1)
+        _fail(item_issues, exit_code=1)
 
     # --- All good ---
     raw = json.loads(overrides_path.read_text(encoding="utf-8"))
@@ -148,12 +163,16 @@ def main() -> None:
     confirmed = sum(1 for o in raw.get("overrides", []) if o.get("confirmed") is True)
     found_true = sum(1 for o in raw.get("overrides", []) if o.get("found") is True)
 
-    print(f"PASS — overrides file is valid and ready for Pass 2.")
-    print()
     print(f"  Items total  : {n}")
     print(f"  confirmed    : {confirmed}/{n}")
     print(f"  found=true   : {found_true}/{n}")
     print(f"\n{sep}\n")
+
+    token_data = {"confirmed": confirmed, "found_true": found_true, "items_total": n}
+    print(
+        f"VALIDATE_OVERRIDES_PASS: {json.dumps(token_data, ensure_ascii=False, sort_keys=True)}",
+        flush=True,
+    )
     sys.exit(0)
 
 

@@ -9,6 +9,10 @@ Pass 2. If validation passes, delegates to artwork_checker_pass2.py verbatim.
 The calling GPT must NOT treat a non-zero exit as a transient error — every
 failure is structural and requires the overrides file to be corrected first.
 
+Machine footer (always last line on stdout):
+  PASS2_WRAPPER_RESULT: {...}
+  status: PASS2_COMPLETE | PASS2_FAILED | PREFLIGHT_FAILED
+
 Usage:
   python run_pass2_wrapper.py \\
       --copy /mnt/data/doc.xlsx \\
@@ -19,9 +23,33 @@ Usage:
 
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
+
+
+def _print_footer(
+    status: str,
+    returncode: int,
+    exit_code: int,
+    output_dir: pathlib.Path,
+    stderr: str = "",
+    report_path: str | None = None,
+) -> None:
+    """Print the machine-parseable footer. Must be the last line on stdout."""
+    footer = {
+        "exit_code": exit_code,
+        "output_dir": str(output_dir),
+        "report_path": report_path,
+        "returncode": returncode,
+        "status": status,
+        "stderr_snippet": (stderr or "")[:500],
+    }
+    print(
+        f"PASS2_WRAPPER_RESULT: {json.dumps(footer, ensure_ascii=False, sort_keys=True)}",
+        flush=True,
+    )
 
 
 def _preflight(output_dir: pathlib.Path, overrides_path: pathlib.Path) -> list[str]:
@@ -82,8 +110,19 @@ def _preflight(output_dir: pathlib.Path, overrides_path: pathlib.Path) -> list[s
     # Per-item checks
     overrides = raw.get("overrides", [])
     if not overrides:
-        errors.append("overrides list is empty.")
-        return errors
+        # Load required_ids to distinguish all-exact-match (items=0) from real empty
+        required_ids = []
+        if tasks_path.exists():
+            try:
+                tasks_data = json.loads(tasks_path.read_text(encoding="utf-8"))
+                required_ids = tasks_data.get("required_ids", [])
+            except Exception:
+                pass
+        if required_ids:
+            errors.append(
+                f"overrides list is empty but {len(required_ids)} vision item(s) require confirmation."
+            )
+        return errors  # no per-item checks for empty list
 
     for o in overrides:
         fid = o.get("finding_id", "?")
@@ -127,7 +166,7 @@ def main() -> None:
                         help="Disable snapshot generation")
     args = parser.parse_args()
 
-    output = pathlib.Path(args.output)
+    output = pathlib.Path(args.output).resolve()
     overrides = pathlib.Path(args.vision_overrides)
 
     sep = "=" * 60
@@ -146,12 +185,17 @@ def main() -> None:
         print("PASS 2 PREFLIGHT FAILED — see errors above.")
         print("Do NOT run Pass 2. Correct the vision_overrides.json file first.")
         print(sep)
+        _print_footer("PREFLIGHT_FAILED", -1, 1, output)
         sys.exit(1)
 
     # ------------------------------------------------------------------
     # Delegate to artwork_checker_pass2.py
     # ------------------------------------------------------------------
-    pass2 = pathlib.Path(__file__).parent / "artwork_checker_pass2.py"
+    # _ARTWORK_CHECKER_PASS2_SCRIPT env var allows test injection of a fake script
+    pass2 = pathlib.Path(
+        os.environ.get("_ARTWORK_CHECKER_PASS2_SCRIPT")
+        or str(pathlib.Path(__file__).parent / "artwork_checker_pass2.py")
+    )
     cmd = (
         [sys.executable, str(pass2), "--copy", args.copy, "--artwork"]
         + args.artwork
@@ -173,8 +217,11 @@ def main() -> None:
             print(proc.stderr, end="", file=sys.stderr)
         except UnicodeEncodeError:
             sys.stderr.buffer.write(proc.stderr.encode("utf-8", errors="replace"))
-
-    sys.exit(proc.returncode)
+        _print_footer("PASS2_FAILED", proc.returncode, 1, output, proc.stderr)
+        sys.exit(1)
+    else:
+        _print_footer("PASS2_COMPLETE", proc.returncode, 0, output, proc.stderr)
+        sys.exit(0)
 
 
 if __name__ == "__main__":

@@ -62,7 +62,7 @@ Exit 0: "No PDF provided. End." Stop. Wait for user.
 
 **VISION:** Call python tool immediately — no prose first.
 ```python
-import subprocess, sys
+import subprocess, sys, json, os
 result = subprocess.run(
     [sys.executable, "/mnt/data/run_vision_step.py",
      "--output", "./output"],
@@ -72,37 +72,39 @@ print(result.stdout)
 if result.returncode != 0:
     print(result.stderr)
     raise SystemExit(1)
-```
-Read images. For each finding_id visible on artwork add to `FOUND_ITEMS` (exact text). Omitted → `found: false`. items=0: keep empty, still run. Check diacritics, hyphens vs em-dashes, font ≤6.5pt, %, curved text.
-
-Then write + validate:
-```python
-import json, subprocess, sys
-data = json.loads(open("./output/gpt_vision/vision_overrides.prefill.json").read())
+prefill_path = "./output/gpt_vision/vision_overrides.prefill.json"
+data = json.loads(open(prefill_path).read())
 # AI: Key=finding_id, Value=exact artwork text (omit IDs not visible)
 FOUND_ITEMS = {}
 for o in data["overrides"]:
-    if o["finding_id"] in FOUND_ITEMS:
+    fid = o["finding_id"]
+    if fid in FOUND_ITEMS:
         o["found"] = True
-        o["visual_artwork_value"] = FOUND_ITEMS[o["finding_id"]]
+        o["visual_artwork_value"] = FOUND_ITEMS[fid]
+    else:
+        o["found"] = False
+        o["visual_artwork_value"] = ""
     o["confirmed"] = True
-open("./output/vision_overrides.json","w").write(json.dumps(data, indent=2))
-result = subprocess.run(
+overrides_path = "./output/vision_overrides.json"
+open(overrides_path, "w").write(json.dumps(data, indent=2))
+assert os.path.exists(overrides_path), "VISION EXIT GATE FAILED — overrides file not written"
+validate = subprocess.run(
     [sys.executable, "/mnt/data/validate_overrides_cli.py",
      "--output", "./output",
-     "--overrides", "./output/vision_overrides.json"],
+     "--overrides", overrides_path],
     capture_output=True, text=True
 )
-print(result.stdout)
-if result.returncode != 0:
-    print(result.stderr)
-    raise SystemExit(1)
+print(validate.stdout)
+if validate.returncode != 0 or \
+   "VALIDATE_OVERRIDES_PASS" not in validate.stdout:
+    raise SystemExit(
+        "⛔ VISION EXIT GATE FAILED — vision_overrides.json not created/valid; cannot proceed."
+    )
 ```
 Output exactly:
 > **Visual verification complete. Type VALIDATE to generate final report.**
 
 Stop. Do not run Pass 2. Wait for user.
-**Cannot open images** → `⛔ VISUAL VERIFICATION NOT EXECUTED`; omit Section D; proceed to VALIDATE.
 
 **VALIDATE:** Call python tool immediately — no prose first.
 ```python
@@ -123,7 +125,7 @@ Pass 2 failure → STOP; show error verbatim. After report: "Process complete. T
 Notes: `"Visually verified on page X..."` only — never write "visual verification required".
 
 ### 5. MANDATORY TOOL CALL
-NEVER output "Pass 1 complete…" unless stdout contains `PASS 1 ARTIFACTS: VERIFIED`. NEVER output "Visual verification complete…" unless stdout contains `PASS — overrides file is valid`. Both must come from an actual python tool call. Never reconstruct from memory — if the python tool was skipped, STOP.
+NEVER output "Pass 1 complete…" unless stdout contains `PASS 1 ARTIFACTS: VERIFIED`. NEVER output "Visual verification complete…" unless stdout contains `VALIDATE_OVERRIDES_PASS`. Both must come from an actual python tool call. Never reconstruct from memory — if the python tool was skipped, STOP.
 
 ---
 
