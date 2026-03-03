@@ -19,11 +19,24 @@ REPO = Path(__file__).parent.parent
 CLI = str(REPO / "validate_overrides_cli.py")
 
 
-def _make_vision_tasks(tmp_dir: Path, required_ids: list[str] | None = None) -> Path:
+def _make_vision_tasks(
+    tmp_dir: Path,
+    required_ids: list[str] | None = None,
+    task_items: list | None = None,
+) -> Path:
+    """
+    Create gpt_vision/vision_tasks.json.
+
+    task_items: list of {"id": ..., "script_match_type": ...} dicts.
+    If omitted, defaults to empty list. Pass task_items explicitly for tests
+    that exercise Option A (non-exact items with found=false).
+    """
+    _required_ids = required_ids or []
+    _items = task_items if task_items is not None else []
     tasks = {
         "task_hash": "testhash123",
-        "required_ids": required_ids or [],
-        "items": [],
+        "required_ids": _required_ids,
+        "items": _items,
         "page_images": {},
         "contact_sheets": [],
     }
@@ -74,16 +87,25 @@ class TestValidateOverridesPass(unittest.TestCase):
             self.assertIn("VALIDATE_OVERRIDES_PASS:", proc.stdout)
 
     def test_valid_overrides_with_items(self):
-        """Valid overrides with found=false items → VALIDATE_OVERRIDES_PASS."""
+        """Valid overrides with found=false items (non-exact + reason) → VALIDATE_OVERRIDES_PASS."""
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             token = _make_human_token(tmp_path)
-            _make_vision_tasks(tmp_path, required_ids=["D-001", "D-002"])
+            _make_vision_tasks(
+                tmp_path,
+                required_ids=["D-001", "D-002"],
+                task_items=[
+                    {"id": "D-001", "script_match_type": "near"},
+                    {"id": "D-002", "script_match_type": "near"},
+                ],
+            )
             items = [
                 {"finding_id": "D-001", "found": False, "visual_artwork_value": "",
-                 "confirmed": True, "evidence": "contact sheet tile"},
+                 "confirmed": True, "evidence": "contact sheet tile",
+                 "reason_not_found": "not_present_on_artwork"},
                 {"finding_id": "D-002", "found": False, "visual_artwork_value": "",
-                 "confirmed": True, "evidence": "contact sheet tile"},
+                 "confirmed": True, "evidence": "contact sheet tile",
+                 "reason_not_found": "illegible"},
             ]
             overrides = _make_overrides(tmp_path, token, overrides=items)
             proc = _run_cli(tmp, str(overrides))
@@ -193,6 +215,110 @@ class TestValidateOverridesFileNotFound(unittest.TestCase):
                     keys = list(json.loads(json_str).keys())
                     self.assertEqual(keys, sorted(keys))
                     break
+
+
+class TestOptionAEnforcement(unittest.TestCase):
+    """Option A: non-exact items with found=false must supply a valid reason_not_found."""
+
+    def _non_exact_tasks(self, tmp_path: Path, fid: str = "D-001") -> None:
+        """Create vision_tasks.json with one non-exact item."""
+        _make_vision_tasks(
+            tmp_path,
+            required_ids=[fid],
+            task_items=[{"id": fid, "script_match_type": "near"}],
+        )
+
+    def test_non_exact_found_false_no_reason_gives_fail(self):
+        """Non-exact item, found=false, no reason_not_found → VALIDATE_OVERRIDES_FAIL."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            token = _make_human_token(tmp_path)
+            self._non_exact_tasks(tmp_path)
+            items = [
+                {"finding_id": "D-001", "found": False, "visual_artwork_value": "",
+                 "confirmed": True, "evidence": "contact sheet tile"},
+            ]
+            overrides = _make_overrides(tmp_path, token, overrides=items)
+            proc = _run_cli(tmp, str(overrides))
+            self.assertEqual(proc.returncode, 1)
+            self.assertIn("VALIDATE_OVERRIDES_FAIL:", proc.stderr)
+            self.assertIn("reason_not_found", proc.stderr)
+
+    def test_non_exact_found_false_invalid_reason_gives_fail(self):
+        """Non-exact item, found=false, invalid reason_not_found → VALIDATE_OVERRIDES_FAIL."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            token = _make_human_token(tmp_path)
+            self._non_exact_tasks(tmp_path)
+            items = [
+                {"finding_id": "D-001", "found": False, "visual_artwork_value": "",
+                 "confirmed": True, "evidence": "contact sheet tile",
+                 "reason_not_found": "just_didnt_look"},
+            ]
+            overrides = _make_overrides(tmp_path, token, overrides=items)
+            proc = _run_cli(tmp, str(overrides))
+            self.assertEqual(proc.returncode, 1)
+            self.assertIn("VALIDATE_OVERRIDES_FAIL:", proc.stderr)
+
+    def test_non_exact_found_false_valid_reason_gives_pass(self):
+        """Non-exact item, found=false, valid reason_not_found → VALIDATE_OVERRIDES_PASS."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            token = _make_human_token(tmp_path)
+            self._non_exact_tasks(tmp_path)
+            items = [
+                {"finding_id": "D-001", "found": False, "visual_artwork_value": "",
+                 "confirmed": True, "evidence": "contact sheet tile",
+                 "reason_not_found": "not_present_on_artwork"},
+            ]
+            overrides = _make_overrides(tmp_path, token, overrides=items)
+            proc = _run_cli(tmp, str(overrides))
+            self.assertEqual(proc.returncode, 0, f"stderr: {proc.stderr}")
+            self.assertIn("VALIDATE_OVERRIDES_PASS:", proc.stdout)
+
+    def test_all_valid_reasons_accepted(self):
+        """Each of the five allowed reason values must pass individually."""
+        allowed = [
+            "not_present_on_artwork",
+            "illegible",
+            "not_in_provided_crops",
+            "blocked_or_obscured",
+            "language_variant_mismatch",
+        ]
+        for reason in allowed:
+            with self.subTest(reason=reason):
+                with tempfile.TemporaryDirectory() as tmp:
+                    tmp_path = Path(tmp)
+                    token = _make_human_token(tmp_path)
+                    self._non_exact_tasks(tmp_path)
+                    items = [
+                        {"finding_id": "D-001", "found": False, "visual_artwork_value": "",
+                         "confirmed": True, "evidence": "contact sheet tile",
+                         "reason_not_found": reason},
+                    ]
+                    overrides = _make_overrides(tmp_path, token, overrides=items)
+                    proc = _run_cli(tmp, str(overrides))
+                    self.assertEqual(proc.returncode, 0, f"reason={reason} stderr: {proc.stderr}")
+                    self.assertIn("VALIDATE_OVERRIDES_PASS:", proc.stdout)
+
+    def test_exact_item_found_false_no_reason_passes(self):
+        """Exact-match item found=false needs no reason_not_found → VALIDATE_OVERRIDES_PASS."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            token = _make_human_token(tmp_path)
+            _make_vision_tasks(
+                tmp_path,
+                required_ids=["D-001"],
+                task_items=[{"id": "D-001", "script_match_type": "exact"}],
+            )
+            items = [
+                {"finding_id": "D-001", "found": False, "visual_artwork_value": "",
+                 "confirmed": True, "evidence": "contact sheet tile"},
+            ]
+            overrides = _make_overrides(tmp_path, token, overrides=items)
+            proc = _run_cli(tmp, str(overrides))
+            self.assertEqual(proc.returncode, 0, f"stderr: {proc.stderr}")
+            self.assertIn("VALIDATE_OVERRIDES_PASS:", proc.stdout)
 
 
 if __name__ == "__main__":

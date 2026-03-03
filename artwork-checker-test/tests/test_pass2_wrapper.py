@@ -203,5 +203,94 @@ class TestPass2WrapperScenarios(unittest.TestCase):
             self.assertEqual(keys, sorted(keys))
 
 
+class TestPass2WrapperOptionA(unittest.TestCase):
+    """Option A: non-exact found=false items must supply reason_not_found in overrides."""
+
+    def _setup_with_non_exact_item(self, tmp_dir: Path, token: str = "TESTTOKEN") -> None:
+        """Like _setup_pass1_artifacts but with one non-exact item in vision_tasks."""
+        (tmp_dir / ".PASS1_DONE").write_text("done")
+        (tmp_dir / ".HUMAN_TOKEN").write_text(token)
+        gv = tmp_dir / "gpt_vision"
+        gv.mkdir(parents=True, exist_ok=True)
+        tasks = {
+            "task_hash": "abc123",
+            "required_ids": ["D-001"],
+            "items": [{"id": "D-001", "script_match_type": "near"}],
+            "page_images": {},
+            "contact_sheets": [],
+        }
+        (gv / "vision_tasks.json").write_text(json.dumps(tasks), encoding="utf-8")
+        (gv / "vision_overrides.prefill.json").write_text(
+            json.dumps({"vision_audit": {"human_token": token}, "overrides": []}),
+            encoding="utf-8",
+        )
+
+    def _make_overrides_with_reason(
+        self, tmp_dir: Path, token: str, reason: str | None
+    ) -> Path:
+        """Create a minimal overrides file for D-001 with found=false."""
+        item = {
+            "finding_id": "D-001",
+            "found": False,
+            "visual_artwork_value": "",
+            "confirmed": True,
+            "evidence": "contact sheet tile",
+        }
+        if reason is not None:
+            item["reason_not_found"] = reason
+        data = {
+            "vision_audit": {
+                "human_token": token,
+                "source": "manual_image_read",
+                "task_hash": "abc123",
+            },
+            "overrides": [item],
+        }
+        path = tmp_dir / "vision_overrides.json"
+        path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return path
+
+    def test_missing_reason_gives_preflight_failed(self):
+        """Non-exact found=false without reason_not_found → PREFLIGHT_FAILED."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            self._setup_with_non_exact_item(tmp_path)
+            overrides = self._make_overrides_with_reason(tmp_path, "TESTTOKEN", reason=None)
+            fake = _make_fake_pass2(tmp_path, exit_code=0)
+            proc = _run_wrapper(tmp_path, fake, overrides)
+            footer = _parse_footer(proc.stdout)
+            self.assertEqual(footer["status"], "PREFLIGHT_FAILED")
+            self.assertEqual(proc.returncode, 1)
+
+    def test_invalid_reason_gives_preflight_failed(self):
+        """Non-exact found=false with invalid reason_not_found → PREFLIGHT_FAILED."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            self._setup_with_non_exact_item(tmp_path)
+            overrides = self._make_overrides_with_reason(
+                tmp_path, "TESTTOKEN", reason="just_didnt_bother"
+            )
+            fake = _make_fake_pass2(tmp_path, exit_code=0)
+            proc = _run_wrapper(tmp_path, fake, overrides)
+            footer = _parse_footer(proc.stdout)
+            self.assertEqual(footer["status"], "PREFLIGHT_FAILED")
+            self.assertEqual(proc.returncode, 1)
+
+    def test_valid_reason_passes_preflight(self):
+        """Non-exact found=false with valid reason_not_found → PASS2_COMPLETE."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            self._setup_with_non_exact_item(tmp_path)
+            overrides = self._make_overrides_with_reason(
+                tmp_path, "TESTTOKEN", reason="not_present_on_artwork"
+            )
+            fake = _make_fake_pass2(tmp_path, exit_code=0)
+            proc = _run_wrapper(tmp_path, fake, overrides)
+            footer = _parse_footer(proc.stdout)
+            self.assertEqual(footer["status"], "PASS2_COMPLETE",
+                             f"Expected PASS2_COMPLETE, got {footer}")
+            self.assertEqual(proc.returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

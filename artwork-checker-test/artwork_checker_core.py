@@ -152,6 +152,18 @@ class StatusCode(Enum):
     FYI = "FYI"
 
 
+# Allowed values for reason_not_found (Option A enforcement).
+# When a vision item has found=false AND its script match_type is not "exact",
+# one of these values MUST be provided.
+REASON_NOT_FOUND_ALLOWED: frozenset = frozenset({
+    "not_present_on_artwork",
+    "illegible",
+    "not_in_provided_crops",
+    "blocked_or_obscured",
+    "language_variant_mismatch",
+})
+
+
 class RiskLevel(Enum):
     LOW = "Low"
     MEDIUM = "Medium"
@@ -3268,7 +3280,13 @@ def validate_vision_overrides(
             f"VISION OVERRIDE REJECTED: unknown IDs present: {sorted(extra)[:10]}"
         )
 
-    # 6. Per-item: confirmed, found→value, evidence
+    # 6. Per-item: confirmed, found→value, evidence, and Option A (reason_not_found)
+    # Build match_type lookup from tasks items; missing → treated as non-exact (per spec)
+    item_match_types = {
+        it["id"]: it.get("script_match_type", "")
+        for it in tasks.get("items", [])
+    }
+
     for o in overrides:
         fid = o.get("finding_id", "?")
         found = bool(o.get("found", False))
@@ -3295,6 +3313,21 @@ def validate_vision_overrides(
             if not evp_path.exists():
                 raise ValueError(
                     f"VISION OVERRIDE REJECTED: {fid} evidence_path does not exist: {evp}"
+                )
+
+        # Option A: non-exact items with found=false MUST supply reason_not_found
+        match_type = item_match_types.get(fid, "")  # "" = unknown → treated as non-exact
+        if match_type != "exact" and not found:
+            reason = (o.get("reason_not_found") or "").strip()
+            if not reason:
+                raise ValueError(
+                    f"VISION OVERRIDE REJECTED: {fid} found=false but reason_not_found "
+                    f"is missing. Allowed: {sorted(REASON_NOT_FOUND_ALLOWED)}"
+                )
+            if reason not in REASON_NOT_FOUND_ALLOWED:
+                raise ValueError(
+                    f"VISION OVERRIDE REJECTED: {fid} reason_not_found '{reason}' is not "
+                    f"in allowed set. Allowed: {sorted(REASON_NOT_FOUND_ALLOWED)}"
                 )
 
 

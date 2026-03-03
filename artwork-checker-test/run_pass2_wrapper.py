@@ -28,6 +28,15 @@ import pathlib
 import subprocess
 import sys
 
+# Mirror of artwork_checker_core.REASON_NOT_FOUND_ALLOWED (belt-and-suspenders)
+_REASON_NOT_FOUND_ALLOWED = frozenset({
+    "not_present_on_artwork",
+    "illegible",
+    "not_in_provided_crops",
+    "blocked_or_obscured",
+    "language_variant_mismatch",
+})
+
 
 def _print_footer(
     status: str,
@@ -107,17 +116,23 @@ def _preflight(output_dir: pathlib.Path, overrides_path: pathlib.Path) -> list[s
             "  Copy the token from vision_overrides.prefill.json without modification."
         )
 
+    # Load tasks data once — used for both the empty-overrides check and Option A
+    tasks_data: dict = {}
+    item_match_types: dict = {}
+    if tasks_path.exists():
+        try:
+            tasks_data = json.loads(tasks_path.read_text(encoding="utf-8"))
+            item_match_types = {
+                it["id"]: it.get("script_match_type", "")
+                for it in tasks_data.get("items", [])
+            }
+        except Exception:
+            pass
+
     # Per-item checks
     overrides = raw.get("overrides", [])
     if not overrides:
-        # Load required_ids to distinguish all-exact-match (items=0) from real empty
-        required_ids = []
-        if tasks_path.exists():
-            try:
-                tasks_data = json.loads(tasks_path.read_text(encoding="utf-8"))
-                required_ids = tasks_data.get("required_ids", [])
-            except Exception:
-                pass
+        required_ids = tasks_data.get("required_ids", [])
         if required_ids:
             errors.append(
                 f"overrides list is empty but {len(required_ids)} vision item(s) require confirmation."
@@ -147,6 +162,21 @@ def _preflight(output_dir: pathlib.Path, overrides_path: pathlib.Path) -> list[s
             if not evp_path.exists():
                 errors.append(
                     f"[{fid}] evidence_path does not exist on disk: {o.get('evidence_path')}"
+                )
+
+        # Option A: non-exact items with found=false MUST supply reason_not_found
+        match_type = item_match_types.get(fid, "")  # "" = unknown → non-exact
+        if match_type != "exact" and not found:
+            reason = (o.get("reason_not_found") or "").strip()
+            if not reason:
+                errors.append(
+                    f"[{fid}] found=false but reason_not_found is missing.\n"
+                    f"  Allowed values: {sorted(_REASON_NOT_FOUND_ALLOWED)}"
+                )
+            elif reason not in _REASON_NOT_FOUND_ALLOWED:
+                errors.append(
+                    f"[{fid}] reason_not_found '{reason}' is not allowed.\n"
+                    f"  Allowed: {sorted(_REASON_NOT_FOUND_ALLOWED)}"
                 )
 
     return errors

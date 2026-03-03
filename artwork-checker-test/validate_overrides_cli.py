@@ -25,6 +25,15 @@ import json
 import sys
 from pathlib import Path
 
+# Mirror of artwork_checker_core.REASON_NOT_FOUND_ALLOWED (belt-and-suspenders)
+_REASON_NOT_FOUND_ALLOWED = frozenset({
+    "not_present_on_artwork",
+    "illegible",
+    "not_in_provided_crops",
+    "blocked_or_obscured",
+    "language_variant_mismatch",
+})
+
 # Import from artwork_checker_core (same directory)
 try:
     from artwork_checker_core import validate_vision_overrides
@@ -48,6 +57,19 @@ def _check_item_states(overrides_path: Path, output_dir: Path) -> list[str]:
         raw = json.loads(overrides_path.read_text(encoding="utf-8"))
     except Exception as e:
         return [f"Cannot parse overrides file: {e}"]
+
+    # Load item match_types for Option A enforcement
+    item_match_types: dict = {}
+    tasks_path = output_dir / "gpt_vision" / "vision_tasks.json"
+    if tasks_path.exists():
+        try:
+            tasks_data = json.loads(tasks_path.read_text(encoding="utf-8"))
+            item_match_types = {
+                it["id"]: it.get("script_match_type", "")
+                for it in tasks_data.get("items", [])
+            }
+        except Exception:
+            pass
 
     for o in raw.get("overrides", []):
         fid = o.get("finding_id", "?")
@@ -76,6 +98,21 @@ def _check_item_states(overrides_path: Path, output_dir: Path) -> list[str]:
             if not evp_path.exists():
                 issues.append(
                     f"  [{fid}] evidence_path not found on disk: {o.get('evidence_path')}"
+                )
+
+        # Option A: non-exact items with found=false MUST supply reason_not_found
+        match_type = item_match_types.get(fid, "")  # "" = unknown → non-exact
+        if match_type != "exact" and not found:
+            reason = (o.get("reason_not_found") or "").strip()
+            if not reason:
+                issues.append(
+                    f"  [{fid}] found=false but reason_not_found is missing. "
+                    f"Allowed: {sorted(_REASON_NOT_FOUND_ALLOWED)}"
+                )
+            elif reason not in _REASON_NOT_FOUND_ALLOWED:
+                issues.append(
+                    f"  [{fid}] reason_not_found '{reason}' is not allowed. "
+                    f"Allowed: {sorted(_REASON_NOT_FOUND_ALLOWED)}"
                 )
 
     return issues

@@ -74,8 +74,8 @@ if result.returncode != 0:
     raise SystemExit(1)
 prefill_path = "./output/gpt_vision/vision_overrides.prefill.json"
 data = json.loads(open(prefill_path).read())
-# AI: Key=finding_id, Value=exact artwork text (omit IDs not visible)
-FOUND_ITEMS = {}
+# reason_not_found: not_present_on_artwork|illegible|not_in_provided_crops|blocked_or_obscured|language_variant_mismatch
+FOUND_ITEMS, NOT_FOUND_REASONS = {}, {}
 for o in data["overrides"]:
     fid = o["finding_id"]
     if fid in FOUND_ITEMS:
@@ -84,10 +84,10 @@ for o in data["overrides"]:
     else:
         o["found"] = False
         o["visual_artwork_value"] = ""
+        o["reason_not_found"] = NOT_FOUND_REASONS.get(fid, "")
     o["confirmed"] = True
 overrides_path = "./output/vision_overrides.json"
 open(overrides_path, "w").write(json.dumps(data, indent=2))
-assert os.path.exists(overrides_path), "VISION EXIT GATE FAILED — overrides file not written"
 validate = subprocess.run(
     [sys.executable, "/mnt/data/validate_overrides_cli.py",
      "--output", "./output",
