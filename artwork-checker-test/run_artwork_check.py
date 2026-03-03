@@ -137,7 +137,7 @@ def validate_vision_overrides(output_dir, vision_overrides_path):
         if evp:
             evp_path = Path(evp)
             if not evp_path.is_absolute():
-                evp_path = Path(tasks.get("output_dir", ".")) / evp_path
+                evp_path = Path(output_dir) / evp_path
             if not evp_path.exists():
                 raise ValueError(
                     f"VISION OVERRIDE REJECTED: {fid} evidence_path does not exist: {evp}"

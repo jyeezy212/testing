@@ -74,6 +74,44 @@ EXIT_VISION_REQUIRED = 42
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _check_dependencies() -> None:
+    """Hard-fail with a clear error block if required third-party libraries are absent."""
+    missing_libs = []
+    try:
+        import openpyxl  # noqa: F401
+    except ImportError:
+        missing_libs.append("openpyxl")
+    try:
+        import fitz  # noqa: F401  (PyMuPDF)
+    except ImportError:
+        missing_libs.append("pymupdf")
+    try:
+        from PIL import Image  # noqa: F401
+    except ImportError:
+        missing_libs.append("pillow")
+    if missing_libs:
+        print("\n=== PASS 1 DEPENDENCY ERROR ===", file=sys.stderr)
+        print(f"ERROR TYPE: MissingDependency", file=sys.stderr)
+        print(f"MESSAGE: Required libraries not installed: {', '.join(missing_libs)}", file=sys.stderr)
+        print("Fix: pip install pymupdf openpyxl pillow pyzbar", file=sys.stderr)
+        print("================================", file=sys.stderr)
+        sys.exit(1)
+
+
+def _atomic_write(path: Path, content: str, encoding: str = "utf-8") -> None:
+    """Write content atomically via a .tmp sibling, then rename, preventing partial reads."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    try:
+        tmp.write_text(content, encoding=encoding)
+        tmp.replace(path)
+    except Exception:
+        try:
+            tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
+        raise
+
+
 def _generate_human_token(length: int = 7) -> str:
     """Generate a random uppercase-alphanumeric token for human verification."""
     alphabet = string.ascii_uppercase + string.digits
@@ -81,14 +119,26 @@ def _generate_human_token(length: int = 7) -> str:
 
 
 def _extract_artwork(artwork_paths, pdf_extractor, ai_extractor):
-    """Try PDF paths first, then AI, return (ExtractionResult, used_path)."""
+    """Try PDF paths first, then AI, return (ExtractionResult, used_path).
+
+    If any PDF is present it is always returned — even with confidence=0 (e.g. an
+    image-only PDF) — so VisionExporter can render pages and generate vision artifacts
+    regardless of text extraction quality.
+    """
     pdf_paths = [p for p in artwork_paths if p.suffix.lower() == ".pdf"]
     ai_paths = [p for p in artwork_paths if p.suffix.lower() == ".ai"]
 
+    first_pdf_result: Optional[tuple] = None
     for pdf_path in pdf_paths:
         extraction = pdf_extractor.extract(pdf_path)
+        if first_pdf_result is None:
+            first_pdf_result = (extraction, pdf_path)
         if extraction.confidence > 0:
             return extraction, pdf_path
+
+    # PDF present but zero-confidence: still return it so vision artifacts are generated.
+    if first_pdf_result is not None:
+        return first_pdf_result
 
     for ai_path in ai_paths:
         extraction = ai_extractor.extract(ai_path)
@@ -106,11 +156,27 @@ def _extract_artwork(artwork_paths, pdf_extractor, ai_extractor):
     ), fallback_path
 
 
+def _resolve_evidence_relative(path_str: str, output_dir: Path) -> str:
+    """Return evidence path relative to output_dir for portable, consistent resolution."""
+    if not path_str:
+        return ""
+    p = Path(path_str)
+    try:
+        return p.relative_to(output_dir).as_posix()
+    except ValueError:
+        return p.as_posix()
+
+
 def _build_prefill(tasks_data: dict, human_token: str, output_dir: Path) -> dict:
     """
     Build vision_overrides.prefill.json from vision_tasks.json data.
-    Exact-match items are pre-filled; all others left blank for human review.
-    human_token field is pre-populated so the human only needs to confirm it.
+
+    Default states per item:
+      - Exact match  → found=True,  value pre-filled (human confirms visually).
+      - Non-exact / NOT FOUND → found=False, value blank (human fills after visual read).
+
+    Evidence paths are stored relative to output_dir so validation resolves them
+    correctly regardless of the working directory when Pass 2 runs.
     """
     items = tasks_data.get("items", [])
     page_images = tasks_data.get("page_images", {})
@@ -127,17 +193,21 @@ def _build_prefill(tasks_data: dict, human_token: str, output_dir: Path) -> dict
     for item in items:
         ev_type, ev_path = _best_evidence(item)
         is_exact = item.get("script_match_type") == "exact"
+        is_not_found = (item.get("script_artwork_value") or "").upper() == "NOT FOUND"
+        # found=True only for script-confirmed exact matches; everything else starts False
+        # so the human must explicitly set found=True and supply a value after visual read.
+        default_found = is_exact and not is_not_found
         overrides.append({
             "finding_id": item["id"],
-            "visual_artwork_value": item.get("script_artwork_value", "") if is_exact else "",
-            "found": True,
+            "visual_artwork_value": item.get("script_artwork_value", "") if default_found else "",
+            "found": default_found,
             "confirmed": False,
             "notes": (
                 f"Visually verified on page {item['page_guess']}, "
                 f"{item['panel']}, {item['language']}"
             ),
             "evidence": ev_type,
-            "evidence_path": ev_path,
+            "evidence_path": _resolve_evidence_relative(ev_path, output_dir),
         })
 
     return {
@@ -174,10 +244,10 @@ def run_pass1(
     output_dir = Path(output_dir)
 
     if not copy_path.exists():
-        raise FileNotFoundError(f"Copy document not found: {copy_path}")
+        raise FileNotFoundError(f"Copy document not found: {copy_path.resolve()}")
     for ap in artwork_paths:
         if not ap.exists():
-            raise FileNotFoundError(f"Artwork file not found: {ap}")
+            raise FileNotFoundError(f"Artwork file not found: {ap.resolve()}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -241,9 +311,7 @@ def run_pass1(
             "Artwork is not a PDF — vision export skipped. "
             "Pass 2 requires vision artifacts and cannot run."
         )
-        (output_dir / PASS1_LOCK_FILE).write_text(
-            "PASS1_DONE_NO_PDF", encoding="utf-8"
-        )
+        _atomic_write(output_dir / PASS1_LOCK_FILE, "PASS1_DONE_NO_PDF")
         print("\nPass 1 complete — no PDF provided; vision export skipped.")
         print("Pass 2 requires vision artifacts. Provide a PDF artwork file.")
         return False
@@ -265,23 +333,17 @@ def run_pass1(
     # ------------------------------------------------------------------
     human_token = _generate_human_token()
 
-    # Write .HUMAN_TOKEN
-    (output_dir / HUMAN_TOKEN_FILE).write_text(human_token, encoding="utf-8")
-    logger.info(f"Human token written: {output_dir / HUMAN_TOKEN_FILE}")
+    # Write .HUMAN_TOKEN (atomic)
+    _atomic_write(output_dir / HUMAN_TOKEN_FILE, human_token)
+    logger.info(f"Human token written: {(output_dir / HUMAN_TOKEN_FILE).resolve()}")
 
-    # Write prefill JSON
+    # Write prefill JSON (atomic)
     prefill = _build_prefill(tasks_data, human_token, output_dir)
     prefill_path = output_dir / "gpt_vision" / "vision_overrides.prefill.json"
-    prefill_path.write_text(
-        json.dumps(prefill, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    logger.info(f"Prefill written: {prefill_path}")
+    _atomic_write(prefill_path, json.dumps(prefill, indent=2, ensure_ascii=False))
+    logger.info(f"Prefill written: {prefill_path.resolve()}")
 
-    # Write lock file
-    (output_dir / PASS1_LOCK_FILE).write_text("PASS1_DONE", encoding="utf-8")
-    logger.info(f"Lock file written: {output_dir / PASS1_LOCK_FILE}")
-
-    # Write machine-readable summary (used by run_pass1_wrapper.py for audit)
+    # Write machine-readable summary (atomic)
     summary = {
         "human_token": human_token,
         "task_hash": tasks_data.get("task_hash"),
@@ -289,10 +351,30 @@ def run_pass1(
         "vision_tasks": str(tasks_path),
         "prefill": str(prefill_path),
     }
-    (output_dir / ".pass1_summary.json").write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    logger.info(f"Pass 1 summary written: {output_dir / '.pass1_summary.json'}")
+    _atomic_write(output_dir / ".pass1_summary.json",
+                  json.dumps(summary, indent=2, ensure_ascii=False))
+    logger.info(f"Pass 1 summary written: {(output_dir / '.pass1_summary.json').resolve()}")
+
+    # Write lock file (atomic) — intentionally LAST so the wrapper's artifact poll only
+    # succeeds once every preceding file is already present on disk.
+    _atomic_write(output_dir / PASS1_LOCK_FILE, "PASS1_DONE")
+    logger.info(f"Lock file written: {(output_dir / PASS1_LOCK_FILE).resolve()}")
+
+    # ------------------------------------------------------------------
+    # Self-check: verify all artifacts are readable before signaling success
+    # ------------------------------------------------------------------
+    _required_artifacts = [
+        output_dir / PASS1_LOCK_FILE,
+        output_dir / HUMAN_TOKEN_FILE,
+        tasks_path,
+        prefill_path,
+    ]
+    _still_missing = [str(p.resolve()) for p in _required_artifacts if not p.exists()]
+    if _still_missing:
+        raise RuntimeError(
+            "Pass 1 artifact self-check failed — files not found after write:\n"
+            + "\n".join(f"  {p}" for p in _still_missing)
+        )
 
     # ------------------------------------------------------------------
     # Print human token instruction (must be visible to human / GPT)
@@ -353,6 +435,8 @@ Example:
 
 
 def main() -> None:
+    _check_dependencies()  # hard-fail early if pymupdf / openpyxl / pillow are missing
+
     args = parse_arguments()
 
     if args.verbose:

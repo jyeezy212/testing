@@ -3242,13 +3242,18 @@ def validate_vision_overrides(
                 "Run Pass 1 to generate the token."
             )
 
-    # 4. overrides list
+    # 4. overrides list + ID coverage
     overrides = raw.get("overrides", [])
-    if not isinstance(overrides, list) or not overrides:
-        raise ValueError("VISION OVERRIDE REJECTED: overrides list missing/empty.")
+    if not isinstance(overrides, list):
+        raise ValueError("VISION OVERRIDE REJECTED: overrides must be a list.")
+    required_ids = set(tasks.get("required_ids", []))
+    if not overrides and required_ids:
+        raise ValueError(
+            "VISION OVERRIDE REJECTED: overrides list is empty but "
+            f"{len(required_ids)} vision item(s) require confirmation."
+        )
 
     # 5. ID coverage — no duplicates, no missing, no extras
-    required_ids = set(tasks.get("required_ids", []))
     seen = [o.get("finding_id") for o in overrides]
     if len(seen) != len(set(seen)):
         raise ValueError("VISION OVERRIDE REJECTED: duplicate finding_id in overrides.")
@@ -3286,7 +3291,7 @@ def validate_vision_overrides(
         if evp:
             evp_path = Path(evp)
             if not evp_path.is_absolute():
-                evp_path = Path(tasks.get("output_dir", ".")) / evp_path
+                evp_path = Path(output_dir) / evp_path
             if not evp_path.exists():
                 raise ValueError(
                     f"VISION OVERRIDE REJECTED: {fid} evidence_path does not exist: {evp}"
