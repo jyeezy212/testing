@@ -638,22 +638,28 @@ def main() -> None:
     print(json.dumps({
         "finding_id": sample_fid,
         "found": True,
-        "visual_artwork_value": "<exact text as printed OR empty string if not found>",
-        "reason_not_found": "<one of: " + " | ".join(_REASON_NOT_FOUND_ALLOWED) + "> OR empty",
+        "visual_artwork_value": "<exact text as printed on artwork, or empty string if not found>",
+        "reason_not_found": "<one of: " + " | ".join(_REASON_NOT_FOUND_ALLOWED) + "> — omit if found=true",
         "confirmed": True,
         "source_image": sample_pf.get("recommended_source_image", "gpt_vision/crops/D-001_page_1.png"),
         "transcription_method": "model_retype",
-        "char_count": "<integer — exact character count of visual_artwork_value>",
-        "punctuation_signature": "<sorted list of unique punctuation chars in value>",
-        "has_diacritics": "<true if value contains letters with diacritics/accents>",
+        "char_count": 14,
+        "punctuation_signature": ["!", ",", "."],
+        "has_diacritics": False,
         "nonce": sample_pf.get("nonce", "<copy from prefill — do not modify>"),
         "spotcheck_answer": "<required if spotcheck_challenge present for this item>",
     }, indent=2, ensure_ascii=False))
     print()
+    print("FIELD NOTES:")
+    print("  char_count          : integer — len(visual_artwork_value). Example: 14")
+    print("  punctuation_signature: JSON ARRAY of single-char strings — sorted unique punctuation")
+    print("                        e.g. [\"!\", \",\", \".\"] or [] if none. NEVER a dict or string.")
+    print("  has_diacritics      : boolean — true if value contains accented/diacritic letters")
+    print("  (build_overrides_from_ai_response.py will recompute and correct these three fields)")
+    print()
     print("RULES:")
     print("  • source_image must be one of recommended_source_image or alternate_images from prefill")
     print("  • nonce must be copied EXACTLY from the prefill — no modification")
-    print("  • char_count must equal len(visual_artwork_value)")
     print("  • If found=false, reason_not_found is required for non-exact script items")
     print("  • Omit source_image_sha256 — build_overrides_from_ai_response.py fills it in")
     print(sep)

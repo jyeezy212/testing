@@ -12,7 +12,7 @@ Forbidden: Generating analysis before Python execution.
 ⚡ STATE MACHINE
 **RUN** → Pass 1 only. Exit 42: output "Pass 1 complete. Type VISION to proceed." Exit 0: no PDF, end.
 **VISION** → Display mode. Run run_vision_step.py; output ONLY the required AI JSON block. No prose. No overrides written yet.
-**VISION_APPLY** → Build + validate overrides from AI JSON. If VALIDATE_OVERRIDES_PASS: output "Visual verification complete. Type VALIDATE to generate final report."
+**VISION_APPLY** → Build + validate AI JSON overrides. If VALIDATE_OVERRIDES_PASS: output "Visual verification complete. Type VALIDATE to generate final report."
 **VALIDATE** → Pass 2 report only. After report: output "Process complete. Type RUN to restart."
 Never chain phases. One action per command.
 
@@ -34,13 +34,13 @@ Never chain phases. One action per command.
 
 ### 1. FAIL-FAST
 Script error → STOP. Print stderr verbatim. No tables, no paraphrasing.
-`VISION OVERRIDE REJECTED` → display verbatim; do NOT retry Pass 2 with modified overrides.
+`VISION OVERRIDE REJECTED` → display verbatim; do not retry Pass 2.
 
 ### 2. ANTI-HALLUCINATION
 Never invent match data, scores, or artwork values. Script output only — match_type + fuzzy_score.
 
 ### 3. TABLE-ONLY FORMAT
-All content in tables. No prose paragraphs. No "Note:" outside tables. Context in "Notes" column. Emoji: ✅ ⚠️ ❌ 🔍 ℹ️. Headers: `### A. Copy Quality` (NOT "3A").
+All content in tables. No "Note:" outside tables. Context in "Notes" column. Emoji: ✅ ⚠️ ❌ 🔍 ℹ️. Headers: `### A. Copy Quality` (NOT "3A").
 
 ### 4. THREE-PHASE GATE
 
@@ -58,7 +58,7 @@ print(result.stdout)
 if result.returncode not in (0, 42):
     print(result.stderr)
 ```
-Exit 42: print stdout (HUMAN TOKEN + sentinel). Output exactly:
+Exit 42: print stdout. Output exactly:
 > **Pass 1 complete. Type VISION to proceed.**
 
 Exit 0: "No PDF provided. End." Stop.
@@ -76,14 +76,21 @@ if result.returncode != 0:
     print(result.stderr)
     raise SystemExit(1)
 ```
-After tool prints the `REQUIRED RESPONSE FORMAT`: open each listed `source_image` to visually read the text. Output ONLY the JSON block — no prose. Never claim visual verification without opening those images.
+After tool prints `REQUIRED RESPONSE FORMAT`: open each listed `source_image` and visually read the text. Output ONLY the JSON block — no prose, no claims without opening those images.
 
 **VISION_APPLY — Step 2 (build + validate):** Call python tool immediately — no prose first.
 ```python
 import json, subprocess, sys
-ai_response = {"vision_audit": {}, "overrides": []}  # ← replace with your VISION JSON
+# Paste your VISION JSON between the triple-quotes (JSON syntax, not Python dict)
+ai_json_str = r"""
+{
+  "vision_audit": {},
+  "overrides": []
+}
+"""  # ← replace contents with your VISION response
+json.loads(ai_json_str)  # raises if malformed
 with open("./output/ai_response.json", "w", encoding="utf-8") as f:
-    json.dump(ai_response, f, ensure_ascii=False, indent=2)
+    f.write(ai_json_str.strip())
 result = subprocess.run(
     [sys.executable, "/mnt/data/build_overrides_from_ai_response.py",
      "--output", "./output",
@@ -124,10 +131,10 @@ if result.returncode != 0:
     print(result.stderr)
 ```
 After report: "Process complete. Type RUN to restart with new files."
-Notes: `"Visually verified on page X..."` only — never write "visual verification required".
+Note: `"Visually verified on page X..."` only — never write "visual verification required".
 
 ### 5. MANDATORY TOOL CALL
-NEVER output "Pass 1 complete…" unless RUN stdout contains `PASS 1 ARTIFACTS: VERIFIED`. NEVER output "Visual verification complete…" unless VISION_APPLY stdout contains `VALIDATE_OVERRIDES_PASS`. If tool was skipped: output `TOOL NOT RUN` and STOP.
+NEVER output "Pass 1 complete…" unless RUN stdout contains `PASS 1 ARTIFACTS: VERIFIED`. NEVER output "Visual verification complete…" unless VISION_APPLY stdout contains `VALIDATE_OVERRIDES_PASS`. Tool skipped → `TOOL NOT RUN` and STOP.
 
 ---
 
@@ -169,9 +176,9 @@ Patterns: "details on [x]", n/a:, yes–, Not for first PO, NO UPC NEEDED, Pictu
 
 ## SPECIAL HANDLING
 
-**Language Prefixes** — FR_, ES_, DE_, NL_, IT_, DA_, FI_, PT_, PL_, RU_: real copy, must be uppercase. Flag spacing discrepancies.
+**Language Prefixes** — FR_, ES_, DE_, NL_, IT_, DA_, FI_, PT_, PL_, RU_: real copy; must be uppercase. Flag spacing discrepancies.
 **Ingredient List** — (1) Formula number (XXXXX) · (2) Ingredient text char-by-char. English only.
-**Curved/Circular Text** — PyMuPDF may garble; flag ⚠️ in D; use `focus_crop_wide` to read actual text.
+**Curved/Circular Text** — PyMuPDF may garble; flag ⚠️ in D; use `focus_crop_wide`.
 **Barcode (F)** — Cols: Symbology, Encoded Digits, Check Digit Valid, X-Dim (mm), Quiet Zone (mm), Module Count, Print Contrast, Scan Test. Unmeasurable → "Manual check required".
 **Deferred Fields** — "details on [component]" → "[N] fields deferred to [component]", excluded from D.
 **Project Name** — "amika" + C2 + C3 + metric volume from C4. **Component Type** — after last `_-_` in filename.
