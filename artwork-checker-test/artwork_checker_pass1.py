@@ -197,18 +197,19 @@ def _build_prefill(tasks_data: dict, human_token: str, output_dir: Path) -> dict
         # found=True only for script-confirmed exact matches; everything else starts False
         # so the human must explicitly set found=True and supply a value after visual read.
         default_found = is_exact and not is_not_found
-        overrides.append({
+        entry = {
             "finding_id": item["id"],
             "visual_artwork_value": item.get("script_artwork_value", "") if default_found else "",
             "found": default_found,
             "confirmed": False,
-            "notes": (
-                f"Visually verified on page {item['page_guess']}, "
-                f"{item['panel']}, {item['language']}"
-            ),
             "evidence": ev_type,
             "evidence_path": _resolve_evidence_relative(ev_path, output_dir),
-        })
+        }
+        # Non-exact items must supply reason_not_found when found=false (Option A).
+        # Pre-populate the field as empty so the reviewer knows it needs to be filled.
+        if not default_found:
+            entry["reason_not_found"] = ""
+        overrides.append(entry)
 
     return {
         "vision_audit": {

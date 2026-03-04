@@ -69,6 +69,15 @@ from artwork_checker_core import (
 # ---------------------------------------------------------------------------
 PASS1_LOCK_FILE = ".PASS1_DONE"
 HUMAN_TOKEN_FILE = ".HUMAN_TOKEN"
+VISION_DONE_FILE = ".VISION_DONE"
+
+# Sentinel markers for extracting the report from stdout
+# Implementation note (3D Notes logic):
+#   - verification_source=="script" + EXACT_MATCH  → Notes = ""
+#   - verification_source=="vision" + visual_verified + OK → Notes = "Visually verified"
+#   - ⚠️ / ❌ rows → Notes = discrepancy description from finding.notes
+FULL_REPORT_START = "<<<FULL_REPORT_MARKDOWN_START>>>"
+FULL_REPORT_END = "<<<FULL_REPORT_MARKDOWN_END>>>"
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +98,16 @@ def gate_check(output_dir: Path, vision_overrides_path: Path) -> None:
             f"output/{PASS1_LOCK_FILE} not found. "
             "Run Pass 1 first:\n"
             "  python artwork_checker_pass1.py --copy ... --artwork ... --output ..."
+        )
+
+    # 1b. Vision done sentinel
+    vision_done = output_dir / VISION_DONE_FILE
+    if not vision_done.exists():
+        errors.append(
+            f"output/{VISION_DONE_FILE} not found. "
+            "Complete the VISION step and validate overrides first:\n"
+            "  python run_vision_step.py --output ...\n"
+            "  python validate_overrides_cli.py --output ... --overrides ..."
         )
 
     # 2. vision_tasks.json
@@ -362,19 +381,32 @@ def emit_report_and_snapshots(
 
     Output is pure stdout markdown — no IPython / display() calls.
     Image paths are relative to output_dir so they resolve from the saved .md file.
+
+    The markdown report is wrapped in sentinel markers so callers can extract it:
+      <<<FULL_REPORT_MARKDOWN_START>>>
+      ... full markdown ...
+      <<<FULL_REPORT_MARKDOWN_END>>>
     """
     output_dir = Path(output_dir)
     sep = "=" * 60
 
-    # 1. Full report — never truncated
+    # 1. Full report — wrapped in sentinel markers, never truncated
     print(f"\n{sep}")
     print("ARTWORK CHECK REPORT")
     print(f"{sep}\n")
+    print(FULL_REPORT_START, flush=True)
     try:
-        print(report)
-    except UnicodeEncodeError:
-        sys.stdout.buffer.write(report.encode("utf-8", errors="replace"))
+        sys.stdout.buffer.write(report.encode("utf-8"))
         sys.stdout.buffer.write(b"\n")
+        sys.stdout.buffer.flush()
+    except AttributeError:
+        # sys.stdout.buffer not available (e.g. some redirected streams)
+        try:
+            print(report)
+        except UnicodeEncodeError:
+            sys.stdout.buffer.write(report.encode("utf-8", errors="replace"))
+            sys.stdout.buffer.write(b"\n")
+    print(FULL_REPORT_END, flush=True)
 
     # 2. Snapshot section — explicit image tags, no UI assumptions
     print(f"\n{sep}")

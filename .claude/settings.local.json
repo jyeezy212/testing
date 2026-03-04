@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(python run_pass1_test.py --help)",
+      "Bash(python run_pass1_test.py --copy \"test_files/1. Body Wash 400ml - Bottle.xlsx\" --artwork \"test_files/1. Amika_Body_BodyWash_400ML_FinalAW_060625.pdf\")"
     ]
   }
 }

@@ -28,6 +28,10 @@ import pathlib
 import subprocess
 import sys
 
+# Sentinel markers matching artwork_checker_pass2.py constants
+_FULL_REPORT_START = "<<<FULL_REPORT_MARKDOWN_START>>>"
+_FULL_REPORT_END = "<<<FULL_REPORT_MARKDOWN_END>>>"
+
 # Mirror of artwork_checker_core.REASON_NOT_FOUND_ALLOWED (belt-and-suspenders)
 _REASON_NOT_FOUND_ALLOWED = frozenset({
     "not_present_on_artwork",
@@ -77,6 +81,14 @@ def _preflight(output_dir: pathlib.Path, overrides_path: pathlib.Path) -> list[s
     if not tasks_path.exists():
         errors.append(
             "output/gpt_vision/vision_tasks.json not found — run Pass 1 first."
+        )
+
+    # Vision done sentinel — validate_overrides_cli.py writes this on success
+    if not (output_dir / ".VISION_DONE").exists():
+        errors.append(
+            "output/.VISION_DONE not found — complete the VISION step first:\n"
+            "  python run_vision_step.py --output ...\n"
+            "  python validate_overrides_cli.py --output ... --overrides ..."
         )
 
     if not overrides_path.exists():
@@ -234,7 +246,23 @@ def main() -> None:
     if args.no_snapshots:
         cmd.append("--no-snapshots")
 
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+
+    # ------------------------------------------------------------------
+    # Extract full markdown report from sentinel markers and write report.md
+    # ------------------------------------------------------------------
+    report_path = None
+    if _FULL_REPORT_START in proc.stdout and _FULL_REPORT_END in proc.stdout:
+        try:
+            _, _rest = proc.stdout.split(_FULL_REPORT_START, 1)
+            _report_content, _ = _rest.split(_FULL_REPORT_END, 1)
+            _report_md = _report_content.strip("\n")
+            output.mkdir(parents=True, exist_ok=True)
+            _report_file = output / "report.md"
+            _report_file.write_text(_report_md, encoding="utf-8")
+            report_path = str(_report_file)
+        except Exception:
+            pass  # non-fatal; report.md is supplemental
 
     # Print Pass 2 stdout verbatim
     try:
@@ -250,7 +278,8 @@ def main() -> None:
         _print_footer("PASS2_FAILED", proc.returncode, 1, output, proc.stderr)
         sys.exit(1)
     else:
-        _print_footer("PASS2_COMPLETE", proc.returncode, 0, output, proc.stderr)
+        _print_footer("PASS2_COMPLETE", proc.returncode, 0, output, proc.stderr,
+                      report_path=report_path)
         sys.exit(0)
 
 

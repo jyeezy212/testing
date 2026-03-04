@@ -564,6 +564,8 @@ class MatchFinding:
     bbox: Optional[Tuple[float, float, float, float]] = None
     matched_runs: List['TextRun'] = field(default_factory=list)
     has_3a_flag: bool = False  # Cross-reference: copy doc had quality issue
+    verification_source: str = "script"  # "script" | "vision"
+    visual_verified: bool = False        # True when vision found=true and confirmed
 
 
 @dataclass
@@ -2449,16 +2451,26 @@ class MarkdownRenderer:
                     match_emoji = "❌"
 
                 art_val = finding.artwork_value or "NOT FOUND"
-                notes = "; ".join(finding.notes) if finding.notes else ""
-                if finding.issue_id:
-                    notes = f"[{finding.issue_id}] {notes}"
+                # Notes rules:
+                # 1. Exact match from script extraction → blank
+                # 2. Vision-confirmed match (status OK) → "Visually verified"
+                # 3. Attention/fail → discrepancy description from notes list
+                if (finding.verification_source == "script"
+                        and finding.match_type == MatchType.EXACT_MATCH):
+                    notes = ""
+                elif (finding.verification_source == "vision"
+                        and finding.visual_verified
+                        and finding.status_code == StatusCode.OK):
+                    notes = "Visually verified"
+                else:
+                    notes = "; ".join(finding.notes) if finding.notes else ""
 
                 lines.append(
                     f"| {sanitize_for_markdown(truncate_text(finding.field_name, 30))} | "
                     f"{sanitize_for_markdown(truncate_text(finding.copy_value, 40))} | "
                     f"{sanitize_for_markdown(truncate_text(art_val, 40))} | "
                     f"{match_emoji} | "
-                    f"{sanitize_for_markdown(truncate_text(notes, 60))} |"
+                    f"{sanitize_for_markdown(truncate_text(notes, 80))} |"
                 )
         return "\n".join(lines)
 
@@ -3148,13 +3160,20 @@ class VisionOverrideApplier:
                 continue
 
             finding = findings[id_map[fid]]
-            found: bool = ov.get("found", False)
-            visual_value: str = ov.get("visual_artwork_value", "")
-            notes_override: str = ov.get("notes", f"Visually verified")
+            found: bool = bool(ov.get("found", False))
+            visual_value: str = (ov.get("visual_artwork_value") or "").strip()
+
+            # Mark as vision-sourced regardless of outcome
+            finding.verification_source = "vision"
+            finding.visual_verified = found and bool(visual_value)
 
             if not found or not visual_value:
-                # Still missing after visual check
-                finding.notes = [notes_override] if notes_override else finding.notes
+                # Still missing after visual check — use reason_not_found for notes
+                reason = (ov.get("reason_not_found") or "").strip()
+                if reason:
+                    finding.notes = [f"Not found: {reason.replace('_', ' ')}"]
+                else:
+                    finding.notes = ["Not found after visual check"]
                 finding.status_code = StatusCode.FAIL
                 finding.requires_zoom = False
                 applied += 1
@@ -3167,25 +3186,35 @@ class VisionOverrideApplier:
             # Recalculate match quality
             norm_copy = self.normalizer.normalize(finding.copy_value)
             norm_art = self.normalizer.normalize(visual_value)
+            copy_short = truncate_text(finding.copy_value, 30)
+            art_short = truncate_text(visual_value, 30)
 
             if norm_copy == norm_art:
                 finding.match_type = MatchType.EXACT_MATCH
                 finding.similarity_score = 100.0
                 finding.status_code = StatusCode.OK if not finding.has_3a_flag else StatusCode.ATTN
+                finding.notes = []  # renderer will show "Visually verified"
             else:
                 score = SequenceMatcher(None, norm_copy, norm_art).ratio() * 100
                 finding.similarity_score = score
                 if score >= Config.EXACT_MATCH_THRESHOLD:
                     finding.match_type = MatchType.EXACT_MATCH
                     finding.status_code = StatusCode.OK if not finding.has_3a_flag else StatusCode.ATTN
+                    finding.notes = []  # renderer will show "Visually verified"
                 elif score >= Config.NEAR_MATCH_THRESHOLD:
                     finding.match_type = MatchType.NEAR_MATCH
                     finding.status_code = StatusCode.ATTN
+                    finding.notes = [
+                        f"Near match ({score:.1f}%): "
+                        f"copy '{copy_short}' vs artwork '{art_short}'"
+                    ]
                 else:
                     finding.match_type = MatchType.MISMATCH
                     finding.status_code = StatusCode.FAIL
+                    finding.notes = [
+                        f"Mismatch: copy '{copy_short}' vs artwork '{art_short}'"
+                    ]
 
-            finding.notes = [notes_override]
             applied += 1
 
         logger.info(f"Applied {applied}/{len(overrides)} vision overrides")

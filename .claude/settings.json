@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m unittest discover tests/ -v)"
+      "Bash(python -m unittest discover tests/ -v)",
+      "Read(//c/Users/Justin/.claude/projects/c--Users-Justin-Documents-GitHub-testing/memory/**)"
     ]
   }
 }

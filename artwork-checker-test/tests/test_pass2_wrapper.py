@@ -50,10 +50,13 @@ def _make_vision_overrides(tmp_dir: Path, token: str, n_items: int = 0) -> Path:
     return path
 
 
-def _setup_pass1_artifacts(tmp_dir: Path, token: str = "TESTTOKEN") -> None:
+def _setup_pass1_artifacts(tmp_dir: Path, token: str = "TESTTOKEN", *,
+                            include_vision_done: bool = True) -> None:
     """Create the expected Pass 1 artifacts in tmp_dir."""
     (tmp_dir / ".PASS1_DONE").write_text("done")
     (tmp_dir / ".HUMAN_TOKEN").write_text(token)
+    if include_vision_done:
+        (tmp_dir / ".VISION_DONE").write_text("{}")
     gv = tmp_dir / "gpt_vision"
     gv.mkdir(parents=True, exist_ok=True)
     tasks = {
@@ -176,6 +179,18 @@ class TestPass2WrapperScenarios(unittest.TestCase):
             self.assertTrue(lines[-1].startswith("PASS2_WRAPPER_RESULT:"),
                             f"Last non-empty line was: {lines[-1]!r}")
 
+    def test_preflight_fail_missing_vision_done(self):
+        """Missing .VISION_DONE → PREFLIGHT_FAILED, exit 1."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            _setup_pass1_artifacts(tmp_path, include_vision_done=False)
+            overrides = _make_vision_overrides(tmp_path, "TESTTOKEN")
+            fake = _make_fake_pass2(tmp_path, exit_code=0)
+            proc = _run_wrapper(tmp_path, fake, overrides)
+            footer = _parse_footer(proc.stdout)
+            self.assertEqual(footer["status"], "PREFLIGHT_FAILED")
+            self.assertEqual(proc.returncode, 1)
+
     def test_empty_overrides_allowed_when_no_required_ids(self):
         """items=0 case: empty overrides list + empty required_ids → preflight passes."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -210,6 +225,7 @@ class TestPass2WrapperOptionA(unittest.TestCase):
         """Like _setup_pass1_artifacts but with one non-exact item in vision_tasks."""
         (tmp_dir / ".PASS1_DONE").write_text("done")
         (tmp_dir / ".HUMAN_TOKEN").write_text(token)
+        (tmp_dir / ".VISION_DONE").write_text("{}")
         gv = tmp_dir / "gpt_vision"
         gv.mkdir(parents=True, exist_ok=True)
         tasks = {
